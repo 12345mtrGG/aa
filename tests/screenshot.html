@@ -118,6 +118,21 @@ f.addEventListener('load', () => {
       type(parts[0] + ' ' + parts[1].slice(0, 2));
     }
 
+    if (screen === 'pinyin-campus') {
+      nav('pinyin');
+      [...d.querySelectorAll('#pinyinTabs .tab-btn')].find((b) => b.textContent.includes('校园生活')).click();
+    }
+
+    if (screen === 'pinyin-word') {
+      nav('pinyin');
+      [...d.querySelectorAll('#pinyinTabs .tab-btn')].find((b) => b.textContent.includes('校园生活')).click();
+      d.querySelectorAll('#pinyinLevels .level-card')[0].click();   // 校园地标
+      freezeAnimations();
+      const t = readTarget(d);
+      const parts = t.split(' ');
+      type(parts[0] + ' ' + parts[1] + ' ' + parts[2].slice(0, 2));
+    }
+
     if (screen === 'boxing') await playBoxing(7);        // 打到有连击
     if (screen === 'boxing-count') await playBoxing(0);  // 停在 3-2-1 倒计时
     if (screen === 'boxing-ko') await playBoxing(200);   // 一路打到 KO，出结算面板

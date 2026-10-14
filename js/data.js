@@ -590,7 +590,68 @@ const PY_PHRASE = pyList(`
 我在学习打字|wozaixuexidazi 今天天气很好|jintiantianqihenhao 上网要注意安全|shangwangyaozhuyianquan
 `);
 
-const PY_ALL = [].concat(PY_CHARS_1, PY_CHARS_2, PY_LIFE, PY_STUDY, PY_TECH, PY_PHRASE);
+/* ---- 大学生日常（校园地标、上课、宿舍、考试、社团、求职）---- */
+
+const PY_CAMPUS = pyList(`
+宿舍|sushe 食堂|shitang 图书馆|tushuguan 教学楼|jiaoxuelou 教室|jiaoshi
+实验室|shiyanshi 操场|caochang 校园|xiaoyuan 自习室|zixishi 快递站|kuaidizhan
+超市|chaoshi 体育馆|tiyuguan 报告厅|baogaoting 洗衣房|xiyifang 开水房|kaishuifang
+校车|xiaoche
+`);
+
+const PY_CLASS = pyList(`
+上课|shangke 下课|xiake 选课|xuanke 课表|kebiao 课程|kecheng
+学分|xuefen 作业|zuoye 交作业|jiaozuoye 小组|xiaozu 分工|fengong
+汇总|huizong 笔记|biji 课件|kejian 讲座|jiangzuo 提问|tiwen
+回答|huida 点名|dianming 签到|qiandao 请假|qingjia 迟到|chidao
+翘课|qiaoke 水课|shuike 早八|zaoba
+`);
+
+const PY_DORM = pyList(`
+室友|shiyou 快递|kuaidi 外卖|waimai 打包|dabao 排队|paidui
+刷卡|shuaka 校园卡|xiaoyuanka 空调|kongtiao 断电|duandian 熄灯|xideng
+赖床|laichuang 洗澡|xizao 打水|dashui 打扫|dazao 值日|zhiri
+生活费|shenghuofei 兼职|jianzhi 熬夜|aoye 通宵|tongxiao
+`);
+
+const PY_EXAM = pyList(`
+期中|qizhong 期末|qimo 绩点|jidian 挂科|guake 补考|bukao
+重修|chongxiu 复习|fuxi 预习|yuxi 自习|zixi 奖学金|jiangxuejin
+保研|baoyan 考研|kaoyan 毕业|biye 论文|lunwen 答辩|dabian
+导师|daoshi 开题|kaiti
+`);
+
+const PY_FUN = pyList(`
+社团|shetuan 学生会|xueshenghui 招新|zhaoxin 聚餐|jucan 火锅|huoguo
+奶茶|naicha 咖啡|kafei 夜宵|yexiao 追剧|zhuiju 打游戏|dayouxi
+刷视频|shuashipin 直播|zhibo 网购|wanggou 拼单|pindan 团购|tuangou
+旅游|lvyou 演唱会|yanchanghui 电影院|dianyingyuan 拍照|paizhao 朋友圈|pengyouquan
+点赞|dianzan 评论|pinglun 转发|zhuanfa 聊天|liaotian 表情包|biaoqingbao
+吐槽|tucao 摸鱼|moyu 内卷|neijuan 躺平|tangping
+`);
+
+const PY_CAREER = pyList(`
+实习|shixi 简历|jianli 面试|mianshi 招聘|zhaopin 招聘会|zhaopinhui
+笔试|bishi 岗位|gangwei 待遇|daiyu 薪资|xinzi 加班|jiaban
+转正|zhuanzheng 三方协议|sanfangxieyi 职业|zhiye 城市|chengshi
+`);
+
+const PY_CAMPUS_PHRASE = pyList(`
+早上有课|zaoshangyouke 帮我带个饭|bangwodaigefan 明天要交作业|mingtianyaojiaozuoye
+你选什么课|nixuanshenmeke 期末考完了|qimokaowanle 我要去图书馆|woyaoqutushuguan
+这道题怎么做|zhedaotizenmezuo 老师点名了吗|laoshidianminglema 我快迟到了|wokuaichidaole
+一起去自习|yiqiquzixi 晚上吃什么|wanshangchishenme 帮我占个座|bangwozhangezuo
+作业写完了吗|zuoyexiewanlema 明天没课|mingtianmeike 周末出去玩|zhoumochuquwan
+我挂科了|woguakele 考研加油|kaoyanjiayou 祝你面试顺利|zhunimianshishunli
+答辩通过了|dabiantongguole 一起去吃饭|yiqiquchifan
+`);
+
+const PY_ALL = [].concat(
+  PY_CHARS_1, PY_CHARS_2,
+  PY_LIFE, PY_STUDY, PY_TECH,
+  PY_CAMPUS, PY_CLASS, PY_DORM, PY_EXAM, PY_FUN, PY_CAREER,
+  PY_PHRASE, PY_CAMPUS_PHRASE,
+);
 
 /**
  * 生成一个拼音练习单元。
@@ -762,10 +823,33 @@ const PINYIN_TRACK = {
       ],
     },
     {
-      id: 'phrase', name: '③ 短语短句',
+      id: 'campus', name: '③ 校园生活',
+      levels: [
+        { id: 'py-s1', title: '校园地标', desc: '宿舍、食堂、图书馆、教学楼', unit: () => pyUnit(PY_CAMPUS, 12) },
+        { id: 'py-s2', title: '上课与作业', desc: '选课、课表、小组、答辩；还有早八和水课', unit: () => pyUnit(PY_CLASS, 14) },
+        { id: 'py-s3', title: '宿舍生活', desc: '室友、快递、外卖、熄灯、熬夜', unit: () => pyUnit(PY_DORM, 14) },
+        { id: 'py-s4', title: '考试与成绩', desc: '期中、期末、绩点、挂科、保研', unit: () => pyUnit(PY_EXAM, 12) },
+        { id: 'py-s5', title: '社团与娱乐', desc: '聚餐、奶茶、追剧、旅游、内卷、躺平', unit: () => pyUnit(PY_FUN, 14) },
+        { id: 'py-s6', title: '实习与求职', desc: '简历、面试、招聘会、三方协议', unit: () => pyUnit(PY_CAREER, 12) },
+        {
+          id: 'py-s7', title: '校园词汇大混合', desc: '六类校园词随机出现，检验真实水平',
+          unit: () => pyUnit([].concat(PY_CAMPUS, PY_CLASS, PY_DORM, PY_EXAM, PY_FUN, PY_CAREER), 18),
+        },
+      ],
+    },
+    {
+      id: 'phrase', name: '④ 短语短句',
       levels: [
         { id: 'py-p1', title: '日常短句', desc: '一整句话连着打，练节奏', unit: () => pyUnit(PY_PHRASE, 7) },
         { id: 'py-p2', title: '短句挑战', desc: '10 个短句，考验连贯性', unit: () => pyUnit(PY_PHRASE, 10) },
+        {
+          id: 'py-p3', title: '校园口语', desc: '「帮我带个饭」「明天要交作业」这类日常话',
+          unit: () => pyUnit(PY_CAMPUS_PHRASE, 8),
+        },
+        {
+          id: 'py-p4', title: '校园口语挑战', desc: '12 句连着打，最贴近真实的聊天节奏',
+          unit: () => pyUnit(PY_CAMPUS_PHRASE, 12),
+        },
       ],
     },
   ],

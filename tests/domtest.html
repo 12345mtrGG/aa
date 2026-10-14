@@ -207,12 +207,30 @@ async function run() {
     section('10. 拼音中文打字');
     [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'pinyin').click();
     ok('切到拼音页', d.getElementById('screen-pinyin').classList.contains('active'));
-    ok('拼音页有 3 个标签', d.querySelectorAll('#pinyinTabs .tab-btn').length === 3);
+    ok('拼音页有 4 个标签', d.querySelectorAll('#pinyinTabs .tab-btn').length === 4,
+      d.querySelectorAll('#pinyinTabs .tab-btn').length);
     const pyLevelCards = d.querySelectorAll('#pinyinLevels .level-card');
-    ok('拼音关卡卡片已渲染 3 个', pyLevelCards.length === 3, pyLevelCards.length);
+    ok('第一个标签页（单字）有 3 关', pyLevelCards.length === 3, pyLevelCards.length);
     ok('拼音关卡预览显示的是汉字',
       /[\u4e00-\u9fa5]/.test(pyLevelCards[0].querySelector('.lc-preview').textContent),
       pyLevelCards[0].querySelector('.lc-preview').textContent);
+
+    // 切到「校园生活」标签页
+    const campusTab = [...d.querySelectorAll('#pinyinTabs .tab-btn')].find((b) => b.textContent.includes('校园生活'));
+    ok('存在「校园生活」标签页', !!campusTab);
+    campusTab.click();
+    ok('校园生活有 7 关', d.querySelectorAll('#pinyinLevels .level-card').length === 7,
+      d.querySelectorAll('#pinyinLevels .level-card').length);
+    const campusTitles = [...d.querySelectorAll('#pinyinLevels .lc-top h4')].map((e) => e.textContent);
+    ok('校园关卡标题顺序正确',
+      campusTitles[0] === '校园地标' && campusTitles[3] === '考试与成绩',
+      campusTitles.join(' / '));
+    ok('校园关卡预览是汉字',
+      /^[\u4e00-\u9fa5 ]+$/.test(d.querySelector('#pinyinLevels .lc-preview').textContent.trim()),
+      d.querySelector('#pinyinLevels .lc-preview').textContent);
+
+    // 切回单字页，后面继续用第一关
+    d.querySelectorAll('#pinyinTabs .tab-btn')[0].click();
 
     // 候选词面板在非拼音关卡里必须是隐藏的
     ok('还没进关卡时候选词面板是隐藏的', d.getElementById('pinyinPanel').classList.contains('hidden'));

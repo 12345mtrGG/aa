@@ -211,6 +211,28 @@ ok('拼音全是小写字母', PY_ALL.every((i) => /^[a-z]+$/.test(i.p)),
 ok('没有重复的汉字条目', new Set(PY_ALL.map((i) => i.w)).size === PY_ALL.length,
   `重复 ${PY_ALL.length - new Set(PY_ALL.map((i) => i.w)).size} 条`);
 
+/* 词库分组：大学生日常那几组必须真的接进了关卡，不能只定义不引用 */
+const PINYIN_TRACK = vm.runInContext('PINYIN_TRACK', ctx);
+const pyTabs = PINYIN_TRACK.tabs;
+ok('拼音有 4 个标签页', pyTabs.length === 4, pyTabs.map((t) => t.name).join(' / '));
+const campusTab = pyTabs.find((t) => t.id === 'campus');
+ok('存在「校园生活」标签页', !!campusTab);
+ok('校园生活有 7 关', campusTab && campusTab.levels.length === 7,
+  campusTab && campusTab.levels.length);
+const phraseTab = pyTabs.find((t) => t.id === 'phrase');
+ok('短语页含校园口语关', phraseTab && phraseTab.levels.some((l) => l.id === 'py-p3')
+  && phraseTab.levels.some((l) => l.id === 'py-p4'));
+ok('校园词库规模够用', [].concat(
+  vm.runInContext('PY_CAMPUS', ctx), vm.runInContext('PY_CLASS', ctx),
+  vm.runInContext('PY_DORM', ctx), vm.runInContext('PY_EXAM', ctx),
+  vm.runInContext('PY_FUN', ctx), vm.runInContext('PY_CAREER', ctx),
+).length >= 100,
+  [].concat(
+    vm.runInContext('PY_CAMPUS', ctx), vm.runInContext('PY_CLASS', ctx),
+    vm.runInContext('PY_DORM', ctx), vm.runInContext('PY_EXAM', ctx),
+    vm.runInContext('PY_FUN', ctx), vm.runInContext('PY_CAREER', ctx),
+  ).length + ' 条');
+
 /* 每个汉字 = 一个音节 = 一段连续的元音，所以「元音段数」应该等于汉字数。
    唯一的例外：前一个音节以元音结尾、后一个音节以元音开头时，拼音书写会把它们连起来
    （我爱 = wo + ai → 写成 woaini，不是 wo'aini）。真实输入法也是这么切的。
@@ -229,6 +251,15 @@ const PINYIN_SPOT = {
   学习: 'xuexi', 老师: 'laoshi', 早上好: 'zaoshanghao', 对不起: 'duibuqi',
   我是中国人: 'woshizhongguoren', 上网: 'shangwang', 登录: 'denglu', 数据: 'shuju',
   屏幕: 'pingmu', 走路: 'zoulu',
+  /* 大学生日常：这些是最容易手滑写错的，逐个锁死 */
+  宿舍: 'sushe', 食堂: 'shitang', 图书馆: 'tushuguan', 教学楼: 'jiaoxuelou',
+  交作业: 'jiaozuoye', 早八: 'zaoba', 翘课: 'qiaoke', 水课: 'shuike',
+  绩点: 'jidian', 挂科: 'guake', 补考: 'bukao', 保研: 'baoyan', 答辩: 'dabian',
+  熄灯: 'xideng', 熬夜: 'aoye', 奶茶: 'naicha', 内卷: 'neijuan', 躺平: 'tangping',
+  表情包: 'biaoqingbao', 朋友圈: 'pengyouquan', 三方协议: 'sanfangxieyi',
+  简历: 'jianli', 面试: 'mianshi', 招聘会: 'zhaopinhui',
+  帮我带个饭: 'bangwodaigefan', 明天要交作业: 'mingtianyaojiaozuoye',
+  老师点名了吗: 'laoshidianminglema', 我挂科了: 'woguakele', 期末考完了: 'qimokaowanle',
 };
 const byWord = {};
 PY_ALL.forEach((i) => { byWord[i.w] = i.p; });
