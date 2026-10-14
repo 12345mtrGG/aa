@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>截图工具</title>
+<style>html,body{margin:0;padding:0;overflow:hidden}iframe{width:1440px;height:1240px;border:0;display:block}</style>
+</head>
+<body>
+<!--
+  截图工具：把 app 放进 iframe，切到指定界面后停住，配合无头 Chrome 的 --screenshot 出图。
+  用法：
+    chrome --headless=new --allow-file-access-from-files --hide-scrollbars \
+           --window-size=1440,1240 --virtual-time-budget=9000 \
+           --screenshot=out.png "file:///.../tests/screenshot.html?s=pinyin"
+  可选 s 值：home / finger / code / english / pinyin / practice / cpp / records / test
+-->
+<script>
+const screen = new URLSearchParams(location.search).get('s') || 'home';
+
+// 记录页 / 练习页需要有成绩数据才好看：同源，父页面先写 localStorage 再建 iframe
+if (screen === 'records' || screen === 'practice') {
+  const now = Date.now();
+  const recs = [];
+  for (let i = 12; i >= 1; i--) {
+    recs.push({
+      ts: now - i * 3600 * 1000,
+      mode: i % 3 === 0 ? 'test' : 'code',
+      title: i % 3 === 0 ? '速度测试 · 代码混合 · 3 分钟' : (i % 2 ? 'C++ 分支与循环' : '符号大杂烩'),
+      kpm: 60 + Math.round(i * 6 + (i % 4) * 9),
+      acc: 91 + (i % 7),
+      seconds: 120 + i * 5,
+      errors: 20 - i,
+      chars: 300 + i * 20,
+    });
+  }
+  localStorage.setItem('typing-tutor.v1', JSON.stringify({
+    records: recs,
+    keyErrors: { '{': 14, '[': 11, '(': 9, ';': 7, '<': 6, '"': 5, '_': 4, '>': 3 },
+    levels: { f01: { stars: 3, bestKpm: 120, bestAcc: 99, times: 4 } },
+    settings: null,
+  }));
+} else {
+  try { localStorage.removeItem('typing-tutor.v1'); } catch (e) {}
+}
+
+const f = document.createElement('iframe');
+f.src = '../index.html';
+document.body.appendChild(f);
+
+/** 把目标文本重新读出来（和打字引擎看到的一致） */
+function readTarget(d) {
+  return [...d.querySelectorAll('#typeText .c')]
+    .map((s) => (s.classList.contains('nl') ? '\n' : s.textContent)).join('');
+}
+
+f.addEventListener('load', () => {
+  setTimeout(async () => {
+    const w = f.contentWindow, d = w.document;
+    const nav = (name) => [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === name).click();
+    const type = (text) => {
+      for (const ch of text) {
+        w.document.dispatchEvent(new w.KeyboardEvent('keydown', {
+          key: ch === '\n' ? 'Enter' : ch, bubbles: true, cancelable: true,
+        }));
+      }
+    };
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const waitFor = async (fn, tries = 80, gap = 80) => {
+      for (let i = 0; i < tries; i++) { if (fn()) return true; await sleep(gap); }
+      return false;
+    };
+    // 无头截图会撞上淡入动画导致画面发白，出图前先关掉动画
+    const freezeAnimations = () => {
+      const st = d.createElement('style');
+      st.textContent = '*,*::before,*::after{animation:none !important;transition:none !important}';
+      d.head.appendChild(st);
+    };
+    /** 拳击游戏：进去、等倒计时、打若干拳 */
+    const playBoxing = async (punches) => {
+      nav('finger');
+      d.getElementById('btnBoxing').click();
+      freezeAnimations();
+      if (punches === 0) return;                        // 停在倒计时画面
+      await waitFor(() => w.eval('Boxing.running') === true);
+      for (let i = 0; i < punches; i++) {
+        const el = d.querySelector('#boxQueue .qkey.cur .qk-main');
+        if (!el) break;
+        w.document.dispatchEvent(new w.KeyboardEvent('keydown', {
+          key: el.textContent, bubbles: true, cancelable: true,
+        }));
+      }
+    };
+
+    if (['finger', 'code', 'english', 'pinyin', 'records', 'test'].includes(screen)) nav(screen);
+
+    if (screen === 'practice') {
+      nav('code');
+      d.querySelector('#codeLevels .level-card').click();
+      type(readTarget(d).slice(0, 34));
+    }
+
+    if (screen === 'cpp') {
+      nav('code');
+      d.querySelectorAll('#codeTabs .tab-btn')[2].click();
+      const card = [...d.querySelectorAll('#codeLevels .level-card')]
+        .find((c) => c.querySelector('h4').textContent.includes('完整程序'));
+      (card || d.querySelector('#codeLevels .level-card')).click();
+      type(readTarget(d).slice(0, 90));
+    }
+
+    if (screen === 'pinyin') {
+      nav('pinyin');
+      d.querySelectorAll('#pinyinTabs .tab-btn')[1].click();   // 常用词
+      d.querySelector('#pinyinLevels .level-card').click();
+      // 打完第一个词的拼音，再打下一个词的前两个字母，让进度色有层次
+      const t = readTarget(d);
+      const parts = t.split(' ');
+      type(parts[0] + ' ' + parts[1].slice(0, 2));
+    }
+
+    if (screen === 'boxing') await playBoxing(7);        // 打到有连击
+    if (screen === 'boxing-count') await playBoxing(0);  // 停在 3-2-1 倒计时
+    if (screen === 'boxing-ko') await playBoxing(200);   // 一路打到 KO，出结算面板
+
+    if (!['boxing', 'boxing-count', 'boxing-ko'].includes(screen)) freezeAnimations();
+    document.title = 'SHOT-READY';
+  }, 350);
+});
+</script>
+</body>
+</html>

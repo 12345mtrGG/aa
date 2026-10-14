@@ -1,0 +1,41 @@
+# ============================================================
+# 打字练习 · .gitignore
+# 本项目是零依赖的纯静态前端（直接双击 index.html 运行），
+# 所以下面大部分规则是为「以后万一加了工具链」准备的。
+# ============================================================
+
+# ---- 操作系统产生的杂物 ----
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+._*
+
+# ---- 编辑器 / IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- Node / 前端工具链（当前没有用到，留着以防以后引入）----
+node_modules/
+dist/
+.vite/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- 测试跑出来的临时产物 ----
+# tests/domtest.html 和 tests/screenshot.html 用无头 Chrome 跑，
+# 默认把浏览器 profile 建在系统临时目录；万一有人改到仓库里，别把几百 MB 缓存提交上来
+_chrome_profile*/
+*.log
+
+# ---- 本地个人配置 / 密钥（务必不要提交）----
+.env
+.env.local
+*.local

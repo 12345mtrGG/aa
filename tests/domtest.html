@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>DOM 集成测试</title>
+<style>body{font:13px/1.6 monospace;margin:0}iframe{width:1360px;height:900px;border:0;position:absolute;left:-9999px}pre{padding:12px;white-space:pre-wrap}</style>
+</head>
+<body>
+<script>/* 每次测试都从干净状态开始，避免上次的记录残留 */
+try { localStorage.removeItem('typing-tutor.v1'); } catch (e) {}
+</script>
+<iframe id="app" src="../index.html"></iframe>
+<pre id="out">running…</pre>
+<script>
+const lines = [];
+let pass = 0, fail = 0;
+function ok(name, cond, extra) {
+  if (cond) { pass++; lines.push('PASS  ' + name); }
+  else { fail++; lines.push('FAIL  ' + name + (extra !== undefined ? '  :: ' + extra : '')); }
+}
+function section(t) { lines.push('\n--- ' + t + ' ---'); }
+
+/** 把目标文本变成真实的 keydown 事件派发进去 */
+function keyNameFor(ch) {
+  if (ch === '\n') return 'Enter';
+  if (ch === '\t') return 'Tab';
+  return ch;
+}
+function typeAll(win, text) {
+  for (const ch of text) {
+    win.document.dispatchEvent(new win.KeyboardEvent('keydown', {
+      key: keyNameFor(ch), bubbles: true, cancelable: true,
+    }));
+  }
+}
+function readTarget(d) {
+  return [...d.querySelectorAll('#typeText .c')]
+    .map((s) => (s.classList.contains('nl') ? '\n' : s.textContent))
+    .join('');
+}
+function done() {
+  document.getElementById('out').textContent =
+    lines.join('\n') + `\n\n===== 通过 ${pass} 项，失败 ${fail} 项 =====`;
+  document.title = fail ? 'DOMTEST-FAIL' : 'DOMTEST-OK';
+}
+
+/**
+ * 等某个条件成立。用固定次数轮询而不是看时钟 ——
+ * 无头 Chrome 的 --virtual-time-budget 会让 Date.now() 飞快前进，
+ * 按时间判断会误判超时。
+ */
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+async function waitFor(fn, tries = 80, gap = 80) {
+  for (let i = 0; i < tries; i++) {
+    if (fn()) return true;
+    await sleep(gap);
+  }
+  return false;
+}
+
+window.addEventListener('load', () => {
+  setTimeout(run, 300);
+});
+
+async function run() {
+  const frame = document.getElementById('app');
+  const win = frame.contentWindow;
+  const d = win.document;
+  // Boxing / App 是 const 声明，不在 window 上，只能通过 eval 取
+  const boxState = (expr) => win.eval('Boxing.' + expr);
+  /** 当前该打的那个出拳键 */
+  const curPunchKey = () => {
+    const el = d.querySelector('#boxQueue .qkey.cur .qk-main');
+    return el ? el.textContent : null;
+  };
+  const punch = (k) => win.document.dispatchEvent(
+    new win.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+
+  try {
+    section('1. 页面初始化');
+    ok('全局脚本加载（App 命名空间存在）', typeof win.eval('typeof App') === 'string' && win.eval('typeof App') === 'object', win.eval('typeof App'));
+    ok('CSS 已生效（按键高度 46px）', win.getComputedStyle(d.querySelector('.key')).height === '46px', win.getComputedStyle(d.querySelector('.key')).height);
+
+    const keys = d.querySelectorAll('#keyboard .key');
+    ok('虚拟键盘已渲染', keys.length > 50, keys.length + ' 个键');
+    ok('F 和 J 有定位凸起标记', d.querySelectorAll('#keyboard .key.home').length === 2);
+    ok('手指配色图例有 9 项', d.querySelectorAll('#kbLegend span').length === 9);
+    ok('双手提示已渲染 10 根手指', d.querySelectorAll('.finger').length === 10);
+
+    const fingerCards = d.querySelectorAll('#fingerLevels .level-card');
+    ok('指法关卡卡片已渲染 18 个', fingerCards.length === 18, fingerCards.length);
+    ok('关卡有分组标题', d.querySelectorAll('#fingerLevels .group-title').length === 4, d.querySelectorAll('#fingerLevels .group-title').length);
+
+    const codeCards = d.querySelectorAll('#codeLevels .level-card');
+    ok('编程关卡卡片已渲染', codeCards.length >= 14, codeCards.length);
+    ok('编程关卡有 3 个语言标签', d.querySelectorAll('#codeTabs .tab-btn').length === 3);
+    ok('英文关卡卡片已渲染', d.querySelectorAll('#englishLevels .level-card').length === 3);
+
+    section('2. 切换标签页');
+    const pyTab = [...d.querySelectorAll('#codeTabs .tab-btn')].find((b) => b.textContent.includes('Python'));
+    ok('能找到 Python 标签', !!pyTab);
+    pyTab.click();
+    const afterTab = d.querySelectorAll('#codeLevels .level-card').length;
+    ok('切到 Python 后关卡更新为 6 个', afterTab === 6, afterTab);
+    const previews = [...d.querySelectorAll('#codeLevels .lc-preview')].map((e) => e.textContent);
+    ok('关卡预览非空', previews.every((p) => p.length > 3), JSON.stringify(previews.slice(0, 2)));
+
+    section('3. 进入练习并打字');
+    // 回到符号标签，点第一个关卡
+    d.querySelectorAll('#codeTabs .tab-btn')[0].click();
+    d.querySelector('#codeLevels .level-card').click();
+    ok('切到练习界面', d.getElementById('screen-practice').classList.contains('active'));
+    ok('标题已更新', d.getElementById('pTitle').textContent.length > 0, d.getElementById('pTitle').textContent);
+    ok('统计栏初始为 0', d.getElementById('sKpm').textContent === '0');
+
+    const target = readTarget(d);
+    ok('目标文本已渲染成字符格子', target.length > 20, target.length + ' 字符');
+    ok('第一个字符是高亮的', d.querySelector('#typeText .c').classList.contains('cur'));
+    ok('键盘上高亮了对应按键', d.querySelectorAll('#keyboard .key.hl').length >= 1);
+    ok('手指提示已点亮', d.querySelectorAll('.finger.active').length >= 1);
+    ok('提示栏显示了按键', d.getElementById('hintNext').textContent.includes('下一个'));
+
+    // 完整打对
+    typeAll(win, target);
+
+    ok('全部打完，弹窗出现', !d.getElementById('modalMask').classList.contains('hidden'));
+    ok('正确率显示 100%', d.getElementById('sAcc').textContent === '100.0%', d.getElementById('sAcc').textContent);
+    ok('进度显示 100%', d.getElementById('sProgress').textContent === '100%', d.getElementById('sProgress').textContent);
+    const bad = d.querySelectorAll('#typeText .c.bad').length;
+    ok('没有标红的字符', bad === 0, bad);
+    const notOk = [...d.querySelectorAll('#typeText .c')].filter((s) => !s.classList.contains('ok')).length;
+    ok('所有字符都变绿了', notOk === 0, notOk);
+    ok('结算弹窗有星星', d.getElementById('mStars').textContent.includes('★'));
+
+    section('4. 成绩写入 localStorage');
+    let saved = null;
+    try { saved = JSON.parse(win.localStorage.getItem('typing-tutor.v1')); } catch (e) {}
+    ok('localStorage 可用且写入成功', !!saved, win.localStorage ? 'ok' : 'no storage');
+    ok('记录数量 = 1', saved && saved.records.length === 1, saved && saved.records.length);
+    ok('记录里有字/分', saved && typeof saved.records[0].kpm === 'number', saved && saved.records[0].kpm);
+    ok('关卡星级已保存', saved && Object.keys(saved.levels).length === 1, saved && JSON.stringify(saved.levels));
+
+    section('5. 严格模式：按错不前进');
+    d.getElementById('mClose').click();
+    const strictOn = d.getElementById('chkStrict').checked;
+    ok('严格模式默认开启', strictOn === true);
+    d.querySelector('#fingerLevels .level-card').click();
+    const t2 = readTarget(d);
+    const wrong = t2[0] === 'f' ? 'j' : 'f';
+    win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: wrong, bubbles: true, cancelable: true }));
+    ok('按错后进度仍是 0%', d.getElementById('sProgress').textContent === '0%', d.getElementById('sProgress').textContent);
+    ok('按错的字符被标红', d.querySelector('#typeText .c').classList.contains('bad'));
+    ok('正确率跌到 0%', d.getElementById('sAcc').textContent === '0.0%', d.getElementById('sAcc').textContent);
+    // 再按对
+    win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: t2[0], bubbles: true, cancelable: true }));
+    ok('改对之后往前推进了', d.getElementById('sProgress').textContent !== '0%', d.getElementById('sProgress').textContent);
+    ok('改对之后正确率回到 50%', d.getElementById('sAcc').textContent === '50.0%', d.getElementById('sAcc').textContent);
+
+    section('6. Tab 补全缩进（Python 多行代码）');
+    d.getElementById('btnBack').click();
+    d.querySelectorAll('#codeTabs .tab-btn')[1].click();
+    const pyCards = [...d.querySelectorAll('#codeLevels .level-card')];
+    const flowCard = pyCards.find((c) => c.querySelector('h4').textContent.includes('条件与循环'));
+    ok('找到「条件与循环」关卡', !!flowCard);
+    flowCard.click();
+    const t3 = readTarget(d);
+    ok('目标里含换行和缩进', t3.includes('\n') && t3.includes('    '), JSON.stringify(t3.slice(0, 30)));
+    // 先打到第一个换行
+    const firstLine = t3.slice(0, t3.indexOf('\n') + 1);
+    typeAll(win, firstLine);
+    const indentRun = t3.slice(t3.indexOf('\n') + 1).match(/^ */)[0].length;
+    ok('行首有 4 空格缩进', indentRun === 4, indentRun);
+    win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    const cur = d.querySelector('#typeText .c.cur');
+    ok('按一次 Tab 直接越过整段缩进', cur && cur.textContent !== ' ', '当前格 = ' + JSON.stringify(cur && cur.textContent));
+    ok('Tab 补全后正确率仍为 100%', d.getElementById('sAcc').textContent === '100.0%', d.getElementById('sAcc').textContent);
+
+    section('7. 返回与成绩记录页');
+    d.getElementById('btnBack').click();
+    ok('返回到编程关卡页', d.getElementById('screen-code').classList.contains('active'));
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'records').click();
+    ok('切到成绩记录页', d.getElementById('screen-records').classList.contains('active'));
+    ok('概览卡片已渲染', d.querySelectorAll('#recordOverview .ov-card').length === 4);
+    ok('表格里有成绩行', d.querySelectorAll('#recordTable tbody tr').length >= 1);
+    ok('薄弱键分析已渲染', d.getElementById('weakList').textContent.length > 0);
+    ok('曲线画布有尺寸', d.getElementById('trendChart').width > 0, d.getElementById('trendChart').width);
+
+    section('8. 速度测试');
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'test').click();
+    d.getElementById('btnStartTest').click();
+    ok('进入限时测试', d.getElementById('screen-practice').classList.contains('active'));
+    ok('时间标签变成「剩余」', d.getElementById('sTimeLabel').textContent === '剩余', d.getElementById('sTimeLabel').textContent);
+    ok('限时模式下隐藏了「下一组」', d.getElementById('btnNext').style.display === 'none');
+    const t4 = readTarget(d);
+    ok('测试文本足够长', t4.length > 500, t4.length);
+
+    section('9. 暂停');
+    win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: t4[0], bubbles: true, cancelable: true }));
+    d.getElementById('btnPause').click();
+    ok('暂停遮罩出现', d.getElementById('typeOverlay').classList.contains('show'));
+    const posBefore = d.getElementById('sProgress').textContent;
+    win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: t4[1], bubbles: true, cancelable: true }));
+    ok('暂停时按键无效', d.getElementById('sProgress').textContent === posBefore);
+    d.getElementById('btnPause').click();
+    ok('恢复后遮罩消失', !d.getElementById('typeOverlay').classList.contains('show'));
+
+    section('10. 拼音中文打字');
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'pinyin').click();
+    ok('切到拼音页', d.getElementById('screen-pinyin').classList.contains('active'));
+    ok('拼音页有 3 个标签', d.querySelectorAll('#pinyinTabs .tab-btn').length === 3);
+    const pyLevelCards = d.querySelectorAll('#pinyinLevels .level-card');
+    ok('拼音关卡卡片已渲染 3 个', pyLevelCards.length === 3, pyLevelCards.length);
+    ok('拼音关卡预览显示的是汉字',
+      /[\u4e00-\u9fa5]/.test(pyLevelCards[0].querySelector('.lc-preview').textContent),
+      pyLevelCards[0].querySelector('.lc-preview').textContent);
+
+    // 候选词面板在非拼音关卡里必须是隐藏的
+    ok('还没进关卡时候选词面板是隐藏的', d.getElementById('pinyinPanel').classList.contains('hidden'));
+
+    pyLevelCards[0].click();
+    ok('进入拼音练习', d.getElementById('screen-practice').classList.contains('active'));
+    ok('候选词面板显示了', !d.getElementById('pinyinPanel').classList.contains('hidden'));
+
+    const word1 = d.getElementById('pyWord').textContent;
+    ok('大字显示了一个汉字', /^[\u4e00-\u9fa5]+$/.test(word1), word1);
+    ok('候选词框有 3 个候选', d.querySelectorAll('#pyCands .py-cand').length === 3,
+      d.querySelectorAll('#pyCands .py-cand').length);
+    ok('第一个候选被高亮', d.querySelector('#pyCands .py-cand').classList.contains('first'));
+    ok('第一个候选就是目标汉字',
+      d.querySelector('#pyCands .py-cand').textContent === word1,
+      d.querySelector('#pyCands .py-cand').textContent + ' vs ' + word1);
+
+    const pyHint = d.getElementById('pyPinyin').textContent;
+    ok('拼音提示已渲染', /^[a-z]+$/.test(pyHint), pyHint);
+    ok('拼音字母初始全是未打状态', d.querySelectorAll('#pyPinyin .t').length === 0);
+    ok('提示栏指出了下一个键', d.getElementById('hintNext').textContent.includes('下一个'));
+    ok('键盘上高亮了对应字母键', d.querySelectorAll('#keyboard .key.hl').length >= 1);
+
+    const pyTarget = readTarget(d);
+    ok('拼音 target 只含小写字母和空格', /^[a-z ]+$/.test(pyTarget), JSON.stringify(pyTarget.slice(0, 30)));
+    ok('目标以空格分词，每个词后面都跟了空格',
+      pyTarget.split(' ').slice(-1)[0] === '', JSON.stringify(pyTarget.slice(-12)));
+
+    // 打完第一个词的全部拼音（还不按空格）
+    const w1p = pyTarget.split(' ')[0];
+    typeAll(win, w1p);
+    ok('拼音全部变绿', d.querySelectorAll('#pyPinyin .t').length === w1p.length,
+      d.querySelectorAll('#pyPinyin .t').length + '/' + w1p.length);
+    ok('没按空格时候选词面板还停在第一个词', d.getElementById('pyWord').textContent === word1);
+    ok('此时正确率仍是 100%', d.getElementById('sAcc').textContent === '100.0%', d.getElementById('sAcc').textContent);
+
+    // 按空格确认，面板应该换到下一个词
+    win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    const word2 = d.getElementById('pyWord').textContent;
+    ok('按空格确认后面板换到下一个词', word2 !== word1, `${word1} → ${word2}`);
+    ok('新词的拼音字母重新变成未打状态', d.querySelectorAll('#pyPinyin .t').length === 0);
+    ok('新词的候选词框第一个是新的目标汉字',
+      d.querySelector('#pyCands .py-cand').textContent === word2);
+
+    // 打完整段
+    typeAll(win, pyTarget.slice(w1p.length + 1));
+    ok('拼音打完整段后弹窗出现', !d.getElementById('modalMask').classList.contains('hidden'));
+    ok('拼音整段正确率 100%', d.getElementById('sAcc').textContent === '100.0%', d.getElementById('sAcc').textContent);
+    ok('拼音整段没有标红的字符', d.querySelectorAll('#typeText .c.bad').length === 0);
+    ok('拼音成绩已写入 localStorage',
+      (() => { try { return JSON.parse(win.localStorage.getItem('typing-tutor.v1')).records.length >= 2; } catch (e) { return false; } })());
+
+    section('11. 拼音速度测试');
+    d.getElementById('mClose').click();
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'test').click();
+    [...d.querySelectorAll('#testKind .seg-btn')].find((b) => b.dataset.kind === 'pinyin').click();
+    d.getElementById('btnStartTest').click();
+    ok('进入拼音限时测试', d.getElementById('screen-practice').classList.contains('active'));
+    ok('拼音测试也显示了候选词面板', !d.getElementById('pinyinPanel').classList.contains('hidden'));
+    ok('拼音测试文本足够长', readTarget(d).length > 500, readTarget(d).length);
+
+    section('12. 拳击小游戏');
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'finger').click();
+    ok('切到指法基础页', d.getElementById('screen-finger').classList.contains('active'));
+    ok('指法页有拳击入口横幅', !!d.getElementById('btnBoxing'));
+
+    d.getElementById('btnBoxing').click();
+    ok('进入拳击界面', d.getElementById('screen-boxing').classList.contains('active'));
+    ok('顶部导航仍高亮「指法基础」',
+      [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'finger').classList.contains('active'));
+    ok('虚拟键盘已重新挂到拳击容器',
+      d.querySelectorAll('#boxingKeyboard .key').length > 50, d.querySelectorAll('#boxingKeyboard .key').length);
+    ok('出拳队列有 5 个键', d.querySelectorAll('#boxQueue .qkey').length === 5,
+      d.querySelectorAll('#boxQueue .qkey').length);
+    ok('队列第一个键是当前出拳键', d.querySelector('#boxQueue .qkey').classList.contains('cur'));
+    ok('第一个键带手指配色条', !!d.querySelector('#boxQueue .qkey.cur .qk-finger'));
+    ok('键盘上高亮了对应的键', d.querySelectorAll('#boxingKeyboard .key.hl').length >= 1);
+    ok('倒计时阶段就给出了出拳键和手指，方便先放手',
+      d.getElementById('boxHint').textContent.includes('准备')
+      && /[\u4e00-\u9fa5]/.test(d.querySelector('#boxHint .finger-tag').textContent),
+      d.getElementById('boxHint').textContent);
+    ok('倒计时横幅显示出来了', d.getElementById('boxBanner').classList.contains('show'));
+    ok('结算面板此刻是隐藏的', d.getElementById('boxOverlay').classList.contains('hidden'));
+
+    // 倒计时期间按键必须无效
+    const preKey = curPunchKey();
+    const preFoe = boxState('foeHp');
+    punch(preKey);
+    ok('倒计时期间按键无效', boxState('foeHp') === preFoe && boxState('running') === false,
+      `foeHp ${preFoe} → ${boxState('foeHp')}`);
+
+    // 等倒计时结束
+    const began = await waitFor(() => boxState('running') === true);
+    ok('倒计时结束后正式开打', began);
+    ok('横幅已收起', !d.getElementById('boxBanner').classList.contains('show'));
+    ok('提示语切换到「出拳键」', d.getElementById('boxHint').textContent.includes('出拳键'),
+      d.getElementById('boxHint').textContent);
+
+    // 计时器真的在走
+    const ticked = await waitFor(() => boxState('remaining') < 59.5, 40, 60);
+    ok('计时器开始倒计时', ticked, `${d.getElementById('boxTimer').textContent} / remaining=${boxState('remaining')}`);
+
+    // 打对 → 出拳
+    const foe0 = boxState('foeHp');
+    const k1 = curPunchKey();
+    punch(k1);
+    ok('打对出拳：对手掉血', boxState('foeHp') < foe0, `${foe0} → ${boxState('foeHp')}`);
+    ok('打对后连击变成 1', boxState('combo') === 1, boxState('combo'));
+    ok('打对后命中数 +1', boxState('hits') === 1, boxState('hits'));
+    ok('第一拳伤害是基础伤害', foe0 - boxState('foeHp') === 10, foe0 - boxState('foeHp'));
+
+    // 打错 → 被反击
+    const foe1 = boxState('foeHp');
+    const you0 = boxState('youHp');
+    const missKey = 'abcdefghijklmnopqrstuvwxyz0123456789'.split('').find((c) => c !== curPunchKey());
+    punch(missKey);
+    ok('打错被反击：自己掉血', boxState('youHp') < you0, `${you0} → ${boxState('youHp')}`);
+    ok('打错后连击清零', boxState('combo') === 0, boxState('combo'));
+    ok('打错不会伤到对手', boxState('foeHp') === foe1);
+    ok('打错后错键数 +1', boxState('misses') === 1, boxState('misses'));
+
+    // 连击加成：连打 5 下，第 5 下开始伤害翻倍
+    let dmgAt5 = 0;
+    for (let i = 0; i < 5; i++) {
+      const before = boxState('foeHp');
+      punch(curPunchKey());
+      if (boxState('combo') === 5) dmgAt5 = before - boxState('foeHp');
+    }
+    ok('连击 5 之后伤害翻倍', dmgAt5 === 20, dmgAt5);
+    ok('最高连击被记录下来', boxState('maxCombo') >= 5, boxState('maxCombo'));
+
+    // 一直打对直到 KO
+    let guard = 0;
+    while (boxState('foeHp') > 0 && guard++ < 400) punch(curPunchKey());
+    ok('连续打对能把对手 KO', boxState('foeHp') === 0 && boxState('over') === true,
+      `guard=${guard} foeHp=${boxState('foeHp')}`);
+    ok('KO 后结算面板出现', !d.getElementById('boxOverlay').classList.contains('hidden'));
+    ok('结算标题写着 KO', d.getElementById('boxResTitle').textContent.includes('KO'),
+      d.getElementById('boxResTitle').textContent);
+    ok('结算显示最高连击', /最高连击/.test(d.getElementById('boxResStats').textContent));
+    const accTxt = d.getElementById('boxResStats').textContent;
+    ok('结算里有准确率', /准确率/.test(accTxt), accTxt);
+    ok('KO 后键盘高亮已清除', d.querySelectorAll('#boxingKeyboard .key.hl').length === 0);
+    ok('拳击成绩已写入 localStorage',
+      (() => {
+        try {
+          const rec = JSON.parse(win.localStorage.getItem('typing-tutor.v1')).records;
+          return rec.some((r) => r.mode === 'boxing');
+        } catch (e) { return false; }
+      })());
+
+    // 再来一局
+    d.getElementById('boxAgain').click();
+    ok('再来一局：对手满血', boxState('foeHp') === 600, boxState('foeHp'));
+    ok('再来一局：自己满血', boxState('youHp') === 100, boxState('youHp'));
+    ok('再来一局：连击清零', boxState('combo') === 0);
+    ok('再来一局：重新进入倒计时', d.getElementById('boxBanner').classList.contains('show'));
+    ok('再来一局：结算面板收起', d.getElementById('boxOverlay').classList.contains('hidden'));
+
+    // 难度切换
+    [...d.querySelectorAll('#boxLevelSeg .seg-btn')].find((b) => b.dataset.lv === 'hard').click();
+    ok('切到困难难度', boxState('levelId') === 'hard', boxState('levelId'));
+    ok('困难难度对手血量更高', boxState('foeHp') === 1000, boxState('foeHp'));
+    ok('困难难度出的键池更大', boxState('cfg.keys').length === 36, boxState('cfg.keys').length);
+
+    // 返回
+    d.getElementById('boxBack').click();
+    ok('返回到指法基础页', d.getElementById('screen-finger').classList.contains('active'));
+    ok('退出后计时停止', boxState('running') === false && boxState('clock') === null);
+
+    // 单例虚拟键盘要能挂回练习界面 —— 这是容易漏的回归点
+    d.querySelectorAll('#fingerLevels .level-card')[0].click();
+    ok('进入练习界面', d.getElementById('screen-practice').classList.contains('active'));
+    ok('练习界面的虚拟键盘恢复了', d.querySelectorAll('#keyboard .key').length > 50,
+      d.querySelectorAll('#keyboard .key').length);
+    ok('拳击容器里的键盘已清空', d.querySelectorAll('#boxingKeyboard .key').length === 0,
+      d.querySelectorAll('#boxingKeyboard .key').length);
+    ok('练习界面的键盘能正常高亮', d.querySelectorAll('#keyboard .key.hl').length >= 1);
+
+  } catch (e) {
+    fail++;
+    lines.push('EXCEPTION  ' + e.message + '\n' + (e.stack || ''));
+  }
+
+  done();
+}
+</script>
+</body>
+</html>

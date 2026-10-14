@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>打字练习 · 从零到编程盲打</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="logo">⌨</span><span>打字练习</span></div>
+  <nav class="nav" id="nav">
+    <button class="nav-btn active" data-screen="home">首页</button>
+    <button class="nav-btn" data-screen="finger">指法基础</button>
+    <button class="nav-btn" data-screen="code">编程打字</button>
+    <button class="nav-btn" data-screen="english">英文练习</button>
+    <button class="nav-btn" data-screen="pinyin">拼音打字</button>
+    <button class="nav-btn" data-screen="test">速度测试</button>
+    <button class="nav-btn" data-screen="records">成绩记录</button>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ================= 首页 ================= -->
+  <section class="screen active" id="screen-home">
+    <div class="hero">
+      <h1>从零开始，学会盲打</h1>
+      <p class="hero-sub">给电脑小白和编程新手准备的打字教练。不用装软件，打开网页就能练。</p>
+      <div class="hero-flow">
+        <div class="flow-step"><b>1</b><span>指法基础</span><em>先学会手指怎么放</em></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><b>2</b><span>英文练习</span><em>字母、单词、文章</em></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><b>3</b><span>拼音打字</span><em>看汉字打拼音</em></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step hot"><b>4</b><span>编程打字</span><em>Python / C++ 代码</em></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><b>5</b><span>速度测试</span><em>看看进步了多少</em></div>
+      </div>
+    </div>
+
+    <div class="home-cards">
+      <button class="home-card" data-goto="finger">
+        <div class="hc-icon">🖐</div>
+        <h3>指法基础</h3>
+        <p>18 节课，从「F 和 J 在哪」开始，屏幕会告诉你该用哪根手指按哪个键。</p>
+        <span class="hc-tag">零基础从这开始</span>
+      </button>
+      <button class="home-card hot" data-goto="code">
+        <div class="hc-icon">💻</div>
+        <h3>编程打字</h3>
+        <p>Python 与 C++：括号、运算符、关键字、命名风格、带缩进的完整程序。</p>
+        <span class="hc-tag">本软件重点</span>
+      </button>
+      <button class="home-card" data-goto="english">
+        <div class="hc-icon">🔤</div>
+        <h3>英文练习</h3>
+        <p>随机字母、常用单词、整句整段，把速度和准确率打扎实。</p>
+        <span class="hc-tag">基本功</span>
+      </button>
+      <button class="home-card" data-goto="pinyin">
+        <div class="hc-icon">🀄</div>
+        <h3>拼音中文打字</h3>
+        <p>屏幕给汉字，你打拼音。带候选词框，像真的输入法一样；虚拟键盘照样提示指法。</p>
+        <span class="hc-tag">中文输入</span>
+      </button>
+      <button class="home-card" data-goto="test">
+        <div class="hc-icon">⏱</div>
+        <h3>速度测试</h3>
+        <p>1 / 3 / 5 分钟限时挑战，测出你的字/分和正确率，成绩自动保存。</p>
+        <span class="hc-tag">检验成果</span>
+      </button>
+      <button class="home-card" data-goto="records">
+        <div class="hc-icon">📈</div>
+        <h3>成绩记录</h3>
+        <p>历史成绩、进步曲线，还有「你最常按错的键」分析。</p>
+        <span class="hc-tag">看得见的进步</span>
+      </button>
+      <div class="home-card static">
+        <div class="hc-icon">💡</div>
+        <h3>给新手的三个提醒</h3>
+        <ul class="tips">
+          <li>练习时把输入法切成<b>英文</b>状态</li>
+          <li>眼睛看屏幕，<b>不要看键盘</b></li>
+          <li>宁可慢，不要错；准确率优先于速度</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 指法基础 ================= -->
+  <section class="screen" id="screen-finger">
+    <div class="panel-head">
+      <h2>指法基础课</h2>
+      <p>十个手指各有分工。按顺序练，每课拿到 <b>★★★</b> 再进下一课。屏幕上的虚拟键盘会高亮该按的键，下方会提示用哪根手指。</p>
+    </div>
+
+    <button class="game-banner" id="btnBoxing">
+      <span class="gb-icon">🥊</span>
+      <span class="gb-text">
+        <b>拳击训练 · 小游戏</b>
+        <em>打对高亮的键就是出拳，打错会被对手反击。练指法，也练准头。</em>
+      </span>
+      <span class="gb-go">开始 →</span>
+    </button>
+
+    <div class="level-grid" id="fingerLevels"></div>
+  </section>
+
+  <!-- ================= 拳击小游戏 ================= -->
+  <section class="screen" id="screen-boxing">
+    <div class="ring">
+      <div class="ring-top">
+        <button class="btn ghost small" id="boxBack">← 返回</button>
+        <div class="ring-clock" id="boxTimer">1:00</div>
+        <div class="seg" id="boxLevelSeg">
+          <button class="seg-btn active" data-lv="easy">简单</button>
+          <button class="seg-btn" data-lv="normal">中等</button>
+          <button class="seg-btn" data-lv="hard">困难</button>
+        </div>
+      </div>
+
+      <div class="ring-hp">
+        <div class="hp-side">
+          <div class="hp-head"><span>你</span><b id="boxYouHpTxt">100</b></div>
+          <div class="hp-bar you"><i id="boxYouHp"></i></div>
+        </div>
+        <div class="hp-side right">
+          <div class="hp-head"><b id="boxFoeHpTxt">600</b><span>对手</span></div>
+          <div class="hp-bar foe"><i id="boxFoeHp"></i></div>
+        </div>
+      </div>
+
+      <div class="ring-stage" id="boxStage">
+        <div class="fighter you" id="boxYouFig"><span class="fig">🥊</span><em>你</em></div>
+        <div class="ring-mid"></div>
+        <div class="fighter foe" id="boxFoeFig"><span class="fig">🥊</span><em>对手</em></div>
+        <div class="ring-banner" id="boxBanner"></div>
+      </div>
+
+      <div class="ring-combo">
+        <span class="rc-combo" id="boxComboTxt">连击 <b>0</b></span>
+        <span class="rc-punch" id="boxPunchName"></span>
+      </div>
+
+      <div class="ring-target">
+        <div class="key-queue" id="boxQueue"></div>
+      </div>
+
+      <div class="hint-bar">
+        <div class="hint-next" id="boxHint">准备好了就开始</div>
+        <div class="hint-opts">
+          <label class="switch"><input type="checkbox" id="boxSound"><span>按键音</span></label>
+        </div>
+      </div>
+
+      <div class="keyboard" id="boxingKeyboard"></div>
+
+      <div class="ring-overlay hidden" id="boxOverlay">
+        <div class="ring-result">
+          <div class="rr-icon" id="boxResIcon">🏆</div>
+          <h2 id="boxResTitle">回合结束</h2>
+          <div class="rr-stats" id="boxResStats"></div>
+          <p class="rr-msg" id="boxResMsg"></p>
+          <div class="rr-btns">
+            <button class="btn primary" id="boxAgain">再来一局</button>
+            <button class="btn" id="boxExit">返回指法基础</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 编程打字 ================= -->
+  <section class="screen" id="screen-code">
+    <div class="panel-head">
+      <h2>编程打字 · Python / C++</h2>
+      <p>写代码最卡手指的不是字母，是 <code>{ } [ ] ( ) ; : &lt; &gt; :: -&gt; &amp;&amp; ||</code> 这些符号，还有缩进。下面按难度分五关，从符号一直练到完整程序。</p>
+    </div>
+    <div class="tabs" id="codeTabs"></div>
+    <div class="level-grid" id="codeLevels"></div>
+  </section>
+
+  <!-- ================= 英文练习 ================= -->
+  <section class="screen" id="screen-english">
+    <div class="panel-head">
+      <h2>英文打字练习</h2>
+      <p>从随机字母到整段文章。这一关练的是「手感」，打好之后编程打字会轻松很多。</p>
+    </div>
+    <div class="tabs" id="englishTabs"></div>
+    <div class="level-grid" id="englishLevels"></div>
+  </section>
+
+  <!-- ================= 拼音中文打字 ================= -->
+  <section class="screen" id="screen-pinyin">
+    <div class="panel-head">
+      <h2>拼音中文打字</h2>
+      <p>屏幕给你汉字，你打出它的拼音 —— 比如「中国」就打 <code>zhongguo</code>，然后按<b>空格</b>确认。
+         这是<b>模拟输入法</b>的练法：所以虚拟键盘照样告诉你该用哪根手指、按错的键也会被统计。
+         练熟之后，用真实输入法打字会顺手很多。</p>
+    </div>
+    <div class="tabs" id="pinyinTabs"></div>
+    <div class="level-grid" id="pinyinLevels"></div>
+  </section>
+
+  <!-- ================= 速度测试 ================= -->
+  <section class="screen" id="screen-test">
+    <div class="panel-head">
+      <h2>速度测试</h2>
+      <p>限时挑战，时间一到自动结算。成绩会存进「成绩记录」，可以反复挑战刷新纪录。</p>
+    </div>
+
+    <div class="test-config">
+      <div class="cfg-block">
+        <label class="cfg-label">测试内容</label>
+        <div class="seg" id="testKind">
+          <button class="seg-btn active" data-kind="code">代码混合</button>
+          <button class="seg-btn" data-kind="english">英文文章</button>
+          <button class="seg-btn" data-kind="pinyin">拼音中文</button>
+          <button class="seg-btn" data-kind="symbol">纯符号</button>
+        </div>
+      </div>
+      <div class="cfg-block">
+        <label class="cfg-label">时长</label>
+        <div class="seg" id="testDur">
+          <button class="seg-btn" data-dur="60">1 分钟</button>
+          <button class="seg-btn active" data-dur="180">3 分钟</button>
+          <button class="seg-btn" data-dur="300">5 分钟</button>
+        </div>
+      </div>
+      <button class="btn primary big" id="btnStartTest">开始测试</button>
+    </div>
+
+    <div class="test-best" id="testBest"></div>
+  </section>
+
+  <!-- ================= 通用练习界面 ================= -->
+  <section class="screen" id="screen-practice">
+    <div class="practice-head">
+      <div class="ph-left">
+        <button class="btn ghost small" id="btnBack">← 返回</button>
+        <div>
+          <h2 id="pTitle">练习</h2>
+          <p class="ph-sub" id="pSubtitle"></p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="sKpm">0</b><span>字/分</span></div>
+        <div class="stat"><b id="sAcc">100%</b><span>正确率</span></div>
+        <div class="stat"><b id="sTime">0:00</b><span id="sTimeLabel">用时</span></div>
+        <div class="stat"><b id="sProgress">0%</b><span>进度</span></div>
+      </div>
+    </div>
+
+    <div class="progress-bar"><i id="pBar"></i></div>
+
+    <div class="pinyin-panel hidden" id="pinyinPanel">
+      <div class="py-left">
+        <div class="py-word" id="pyWord">—</div>
+        <div class="py-pinyin" id="pyPinyin"></div>
+      </div>
+      <div class="py-right">
+        <div class="py-label">候选词 · 打完按空格确认</div>
+        <div class="py-cands" id="pyCands"></div>
+      </div>
+    </div>
+
+    <div class="type-area" id="typeArea">
+      <div class="type-scroll" id="typeScroll">
+        <div class="type-text" id="typeText"></div>
+      </div>
+      <div class="type-overlay" id="typeOverlay"></div>
+    </div>
+
+    <div class="hint-bar">
+      <div class="hint-next" id="hintNext">准备好了就按第一个键开始</div>
+      <div class="hint-opts">
+        <label class="switch"><input type="checkbox" id="chkStrict" checked><span>严格模式</span></label>
+        <label class="switch"><input type="checkbox" id="chkTabIndent" checked><span>Tab 补全缩进</span></label>
+        <label class="switch"><input type="checkbox" id="chkSpaces" checked><span>显示空格</span></label>
+        <label class="switch"><input type="checkbox" id="chkSound"><span>按键音</span></label>
+      </div>
+    </div>
+
+    <div class="hands-wrap">
+      <div class="hand" id="handLeft">
+        <div class="hand-label">左手</div>
+        <div class="fingers">
+          <div class="finger" data-finger="L5"><i></i><span>小指</span></div>
+          <div class="finger" data-finger="L4"><i></i><span>无名</span></div>
+          <div class="finger" data-finger="L3"><i></i><span>中指</span></div>
+          <div class="finger" data-finger="L2"><i></i><span>食指</span></div>
+          <div class="finger thumb" data-finger="TH"><i></i><span>拇指</span></div>
+        </div>
+      </div>
+      <div class="hand right" id="handRight">
+        <div class="hand-label">右手</div>
+        <div class="fingers">
+          <div class="finger thumb" data-finger="TH"><i></i><span>拇指</span></div>
+          <div class="finger" data-finger="R2"><i></i><span>食指</span></div>
+          <div class="finger" data-finger="R3"><i></i><span>中指</span></div>
+          <div class="finger" data-finger="R4"><i></i><span>无名</span></div>
+          <div class="finger" data-finger="R5"><i></i><span>小指</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kb-legend" id="kbLegend"></div>
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="practice-foot">
+      <button class="btn" id="btnRestart">↻ 重新开始</button>
+      <button class="btn" id="btnPause">⏸ 暂停</button>
+      <button class="btn primary" id="btnNext">下一组 →</button>
+      <span class="foot-note">提示：练习时请把输入法切换到<b>英文</b>状态</span>
+    </div>
+  </section>
+
+  <!-- ================= 成绩记录 ================= -->
+  <section class="screen" id="screen-records">
+    <div class="panel-head">
+      <h2>成绩记录</h2>
+      <p>成绩保存在你这台电脑的浏览器里（localStorage），不会上传到任何地方。</p>
+    </div>
+
+    <div class="record-overview" id="recordOverview"></div>
+
+    <div class="record-grid">
+      <div class="card">
+        <h3>进步曲线（字/分）</h3>
+        <canvas id="trendChart" width="640" height="220"></canvas>
+        <p class="card-note" id="trendNote">还没有数据，去练几组吧。</p>
+      </div>
+
+      <div class="card">
+        <h3>薄弱键分析</h3>
+        <p class="card-note">统计你「该按这个键却按错」的次数。</p>
+        <div class="weak-list" id="weakList"></div>
+        <button class="btn primary" id="btnWeakDrill">针对薄弱键生成练习</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>最近成绩</h3>
+      <div class="table-wrap">
+        <table class="record-table" id="recordTable">
+          <thead>
+            <tr><th>时间</th><th>项目</th><th>字/分</th><th>正确率</th><th>用时</th><th>错误</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <button class="btn danger" id="btnClearRecords">清空全部记录</button>
+    </div>
+  </section>
+
+  <!-- ================= 结算弹窗 ================= -->
+  <div class="modal-mask hidden" id="modalMask">
+    <div class="modal" id="modal">
+      <div class="modal-stars" id="mStars"></div>
+      <h2 id="mTitle">这一组完成啦</h2>
+      <div class="modal-stats" id="mStats"></div>
+      <p class="modal-msg" id="mMsg"></p>
+      <div class="modal-btns">
+        <button class="btn" id="mAgain">再来一次</button>
+        <button class="btn primary" id="mNext">下一组</button>
+        <button class="btn ghost" id="mClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/boxing.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
