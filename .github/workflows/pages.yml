@@ -1,0 +1,48 @@
+# 把仓库根目录当作静态网站发布到 GitHub Pages
+#
+# 这个项目是纯静态的（原生 HTML/CSS/JS，零依赖零构建），
+# 所以不需要任何构建步骤，直接把整份文件传上去就行。
+#
+# 用的是 Actions 自带的临时令牌，不需要配置任何个人密钥。
+# 仓库还没开 Pages 的话，configure-pages 的 enablement 会自动开。
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # 也可以在 Actions 页面手动触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同时只跑一个部署；排队中的不取消，避免刚推的版本被跳过
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Pages（未开启则自动开启）
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: 打包整个仓库根目录
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: 发布
+        id: deployment
+        uses: actions/deploy-pages@v4
