@@ -91,7 +91,16 @@ f.addEventListener('load', () => {
       }
     };
 
-    if (['finger', 'code', 'english', 'pinyin', 'custom', 'records', 'test'].includes(screen)) nav(screen);
+    if (['finger', 'code', 'english', 'pinyin', 'articles', 'custom', 'records', 'test'].includes(screen)) nav(screen);
+
+    if (screen === 'verilog') {
+      nav('code');
+      [...d.querySelectorAll('#codeTabs .tab-btn')].find((b) => b.textContent.includes('Verilog')).click();
+    }
+
+    if (screen === 'articles') {
+      nav('articles');
+    }
 
     if (screen === 'custom') {
       const ta = d.getElementById('customText');

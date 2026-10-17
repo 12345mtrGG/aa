@@ -93,7 +93,8 @@ async function run() {
 
     const codeCards = d.querySelectorAll('#codeLevels .level-card');
     ok('编程关卡卡片已渲染', codeCards.length >= 14, codeCards.length);
-    ok('编程关卡有 3 个语言标签', d.querySelectorAll('#codeTabs .tab-btn').length === 3);
+    ok('编程关卡有 4 个语言标签', d.querySelectorAll('#codeTabs .tab-btn').length === 4,
+      d.querySelectorAll('#codeTabs .tab-btn').length);
     ok('英文关卡卡片已渲染', d.querySelectorAll('#englishLevels .level-card').length === 3);
 
     section('2. 切换标签页');
@@ -498,6 +499,55 @@ async function run() {
     d.getElementById('mClose').click();
     ok('返回自定义练习页', d.getElementById('screen-custom').classList.contains('active'));
     ok('返回后文本还在', ta.value.length > 0);
+
+    section('14. 文章练习与 Verilog');
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'articles').click();
+    ok('切到文章练习页', d.getElementById('screen-articles').classList.contains('active'));
+    ok('文章练习有 2 个标签', d.querySelectorAll('#articleTabs .tab-btn').length === 2,
+      d.querySelectorAll('#articleTabs .tab-btn').length);
+    ok('英文论文有 6 关', d.querySelectorAll('#articleLevels .level-card').length === 6,
+      d.querySelectorAll('#articleLevels .level-card').length);
+
+    // 中文文章标签：预览应是汉字
+    const zhTabBtn = [...d.querySelectorAll('#articleTabs .tab-btn')].find((b) => b.textContent.includes('集成电路'));
+    ok('有「中文 · 集成电路」标签', !!zhTabBtn);
+    zhTabBtn.click();
+    ok('中文集成电路有 3 关', d.querySelectorAll('#articleLevels .level-card').length === 3,
+      d.querySelectorAll('#articleLevels .level-card').length);
+    ok('中文文章预览是汉字',
+      /^[\u4e00-\u9fa5 ]+$/.test(d.querySelector('#articleLevels .lc-preview').textContent.trim()),
+      d.querySelector('#articleLevels .lc-preview').textContent);
+
+    d.querySelectorAll('#articleLevels .level-card')[0].click();
+    ok('进入中文文章练习', d.getElementById('screen-practice').classList.contains('active'));
+    ok('中文文章用拼音面板', !d.getElementById('pinyinPanel').classList.contains('hidden'));
+    ok('中文文章第一个词是「一块」', d.getElementById('pyWord').textContent === '一块',
+      d.getElementById('pyWord').textContent);
+
+    // 英文论文关
+    d.getElementById('btnBack').click();
+    d.querySelectorAll('#articleTabs .tab-btn')[0].click();
+    d.querySelectorAll('#articleLevels .level-card')[0].click();
+    ok('英文论文进入普通打字模式', d.getElementById('pinyinPanel').classList.contains('hidden'));
+    const paperTxt = readTarget(d);
+    ok('英文摘要是 Attention 论文首句',
+      paperTxt.startsWith('The dominant sequence transduction models'), paperTxt.slice(0, 40));
+    ok('英文摘要不含中文', !/[\u4e00-\u9fa5]/.test(paperTxt));
+
+    // Verilog 标签页
+    d.getElementById('btnBack').click();
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'code').click();
+    const vlgBtn = [...d.querySelectorAll('#codeTabs .tab-btn')].find((b) => b.textContent.includes('Verilog'));
+    ok('有 Verilog 标签', !!vlgBtn);
+    vlgBtn.click();
+    ok('Verilog 有 7 关', d.querySelectorAll('#codeLevels .level-card').length === 7,
+      d.querySelectorAll('#codeLevels .level-card').length);
+
+    d.querySelectorAll('#codeLevels .level-card')[0].click();
+    ok('进入 Verilog 练习', d.getElementById('screen-practice').classList.contains('active'));
+    const vlgTxt = readTarget(d);
+    ok('Verilog 文本含 module/always/assign 等关键字',
+      /module|always|assign|input|output|wire|reg|posedge/.test(vlgTxt), JSON.stringify(vlgTxt.slice(0, 40)));
 
   } catch (e) {
     fail++;

@@ -534,6 +534,315 @@ int main() {
 ];
 
 /* ============================================================
+   三点二、C++ 完整项目（一个从头到尾能跑的小程序）
+   ============================================================ */
+
+const CPP_PROJECT = `// Student score book: a small but complete C++ project
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <cstddef>
+#include <algorithm>
+
+struct Student {
+    std::string name;
+    int score;
+};
+
+class ScoreBook {
+public:
+    void add(const std::string& name, int score) {
+        students_.push_back({name, score});
+    }
+
+    double average() const {
+        if (students_.empty()) return 0.0;
+        int sum = 0;
+        for (const auto& s : students_) {
+            sum += s.score;
+        }
+        return static_cast<double>(sum) / students_.size();
+    }
+
+    std::vector<Student> top(std::size_t n) const {
+        std::vector<Student> sorted = students_;
+        std::sort(sorted.begin(), sorted.end(),
+                  [](const Student& a, const Student& b) {
+                      return a.score > b.score;
+                  });
+        if (sorted.size() > n) {
+            sorted.resize(n);
+        }
+        return sorted;
+    }
+
+private:
+    std::vector<Student> students_;
+};
+
+int main() {
+    ScoreBook book;
+    book.add("Alice", 92);
+    book.add("Bob", 78);
+    book.add("Carol", 85);
+
+    std::cout << std::fixed << std::setprecision(1);
+    std::cout << "average = " << book.average() << std::endl;
+
+    for (const auto& s : book.top(2)) {
+        std::cout << s.name << " : " << s.score << std::endl;
+    }
+    return 0;
+}`;
+
+/* ============================================================
+   三点三、Verilog 入门
+   ============================================================ */
+
+const VLG_SYMBOLS = [
+  'module', 'endmodule', 'input', 'output', 'inout', 'wire', 'reg',
+  'always', 'assign', 'begin', 'end', 'posedge', 'negedge', 'parameter',
+  'localparam', 'if', 'else', 'case', 'endcase', '#', '@', '<=', '==', '!=',
+  '&&', '||', '~', '&', '|', '^', '<<', '>>',
+];
+
+const VLG_LINES_PORT = [
+  'module adder (',
+  '    input  wire [3:0] a,',
+  '    input  wire [3:0] b,',
+  '    input  wire       cin,',
+  '    output wire [3:0] sum,',
+  '    output wire       cout',
+  ');',
+  'endmodule',
+  'wire [7:0] data;',
+  'reg  [3:0] cnt;',
+  'parameter WIDTH = 8;',
+];
+
+const VLG_BLOCKS_MODULE = [
+`module adder (
+    input  wire [3:0] a,
+    input  wire [3:0] b,
+    output wire [4:0] sum
+);
+    assign sum = a + b;
+endmodule`,
+
+`module mux2 (
+    input  wire a,
+    input  wire b,
+    input  wire sel,
+    output wire y
+);
+    assign y = sel ? b : a;
+endmodule`,
+
+`module decoder2to4 (
+    input  wire [1:0] in,
+    output reg  [3:0] out
+);
+    always @(*) begin
+        case (in)
+            2'b00: out = 4'b0001;
+            2'b01: out = 4'b0010;
+            2'b10: out = 4'b0100;
+            default: out = 4'b1000;
+        endcase
+    end
+endmodule`,
+];
+
+const VLG_BLOCKS_COMB = [
+`assign y = (a & b) | (~c);
+assign z = a ^ b;`,
+
+`assign {cout, sum} = a + b + cin;
+assign shifted = data << 2;`,
+
+`wire [3:0] low  = value[3:0];
+wire [3:0] high = value[7:4];
+assign eq = (a == b);
+assign ne = (a != b);`,
+
+`assign valid = (state == 2'b01) && (ready || force);`,
+];
+
+const VLG_BLOCKS_SEQ = [
+`always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        cnt <= 8'd0;
+    end else begin
+        cnt <= cnt + 8'd1;
+    end
+end`,
+
+`always @(posedge clk) begin
+    q <= d;
+end`,
+
+`always @(negedge clk) begin
+    if (enable) begin
+        q <= d;
+    end
+end`,
+];
+
+const VLG_MODULES = [
+`module clk_div #(
+    parameter DIV = 50_000_000
+) (
+    input  wire clk,
+    input  wire rst_n,
+    output reg  tick
+);
+    reg [25:0] cnt;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt  <= 26'd0;
+            tick <= 1'b0;
+        end else if (cnt == DIV - 1) begin
+            cnt  <= 26'd0;
+            tick <= 1'b1;
+        end else begin
+            cnt  <= cnt + 26'd1;
+            tick <= 1'b0;
+        end
+    end
+endmodule`,
+
+`module counter #(
+    parameter WIDTH = 8
+) (
+    input  wire             clk,
+    input  wire             rst_n,
+    input  wire             en,
+    output reg  [WIDTH-1:0] q
+);
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            q <= {WIDTH{1'b0}};
+        end else if (en) begin
+            q <= q + 1'b1;
+        end
+    end
+endmodule`,
+
+`module seg7 (
+    input  wire [3:0] bin,
+    output reg  [6:0] seg
+);
+    always @(*) begin
+        case (bin)
+            4'd0: seg = 7'b1111110;
+            4'd1: seg = 7'b0110000;
+            4'd2: seg = 7'b1101101;
+            4'd3: seg = 7'b1111001;
+            default: seg = 7'b0000000;
+        endcase
+    end
+endmodule`,
+];
+
+const VLG_TESTBENCH = [
+`module tb_clk_div;
+    reg  clk;
+    reg  rst_n;
+    wire tick;
+
+    clk_div #(.DIV(4)) dut (
+        .clk(clk),
+        .rst_n(rst_n),
+        .tick(tick)
+    );
+
+    initial begin
+        clk = 1'b0;
+        forever #5 clk = ~clk;
+    end
+
+    initial begin
+        rst_n = 1'b0;
+        #20 rst_n = 1'b1;
+        #100 $finish;
+    end
+endmodule`,
+];
+
+/* ============================================================
+   三点四、文章练习素材
+
+   说明：
+   - 英文《Attention Is All You Need》只引用「摘要原文」（带出处），
+     其余是导读——用我自己的话讲同一件事，不整篇转载论文。
+   - 中文集成电路部分为**原创学习材料**，围绕相关研究方向撰写，
+     不是任何论文的原文，也不代表原作者的观点。
+   ============================================================ */
+
+/* 论文摘要：Vaswani et al., "Attention Is All You Need", arXiv:1706.03762 */
+const EN_ATTENTION_ABSTRACT = `The dominant sequence transduction models are based on complex recurrent or convolutional neural networks in an encoder-decoder configuration. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data.`;
+
+/* 以下三段是导读，原创文字 */
+const EN_ATTENTION_INTRO = `Before the Transformer, sequence models were built on recurrence. A recurrent network reads a sentence one token at a time and carries a hidden state forward, so the computation at step one hundred cannot begin until step ninety-nine has finished. That sequential dependency is the reason these models were hard to parallelize. The Transformer removes it. Instead of walking through the sequence, it lets every position look at every other position in a single step. The paper argues that attention alone is enough, and the experiment it reports supports that claim: better translation quality, trained in a fraction of the time.`;
+
+const EN_ATTENTION_SELF = `The central idea is self-attention. Each token is projected into three vectors: a query, a key and a value. The score between two tokens is the dot product of one token's query with the other token's key. Those scores are scaled down, passed through a softmax, and used as weights to average the value vectors. The result is a new representation for each token that blends in information from the tokens it attends to. Because every position can attend to every other position in one step, the path between any two tokens is short. This is what lets the model capture long range dependencies without the sequential bottleneck of a recurrent network.`;
+
+const EN_ATTENTION_HEADS = `A single attention operation can express only one pattern of relatedness. The Transformer therefore runs several attention heads in parallel. Each head has its own projection matrices, so each head learns a different way of looking at the sequence. One head might track syntactic agreement, another might follow coreference, and a third might focus on nearby words. The outputs of all heads are concatenated and projected back to the model dimension. This is cheap: splitting the model into eight heads makes each head one eighth as wide, so the total cost stays close to that of a single full-width head.`;
+
+const EN_ATTENTION_POS = `Attention by itself is order blind. If you shuffle the tokens, the weighted sums are the same, because the operation treats its input as a set rather than a sequence. The Transformer restores order by adding a positional encoding to every input embedding. The paper uses fixed sinusoids of different frequencies, so that the encoding of a position is a deterministic function of its index. Removing recurrence also removes the sequential dependency that blocks parallel training. Every position can be computed at the same time, and training on eight GPUs for a few days was enough to beat the best translation systems of the time.`;
+
+/* ---- 中文集成电路专题（原创）---- */
+/* 一、芯片是怎么造出来的 */
+const ZH_IC_MAKE = pyList(`
+一块|yikuai 芯片|xinpian 的|de 诞生|dansheng 要|yao 经过|jingguo 几百|jibai 道|dao 工序|gongxu
+首先|shouxian 是|shi 设计|sheji 工程师|gongchengshi 用|yong 硬件|yingjian 描述|miaoshu 语言|yuyan
+写出|xiechu 电路|dianlu 再|zai 综合|zonghe 布局|buju 和|he 布线|buxian 变成|biancheng 版图|bantu
+然后|ranhou 是|shi 制造|zhizao 在|zai 硅片|guipian 上|shang 反复|fanfu 进行|jinxing
+光刻|guangke 刻蚀|keshi 离子|lizi 注入|zhuru 薄膜|baomo 沉积|chenji
+每|mei 一步|yibu 的|de 精度|jingdu 都|dou 在|zai 纳米|nami 级别|jibie
+最后|zuihou 是|shi 封装|fengzhuang 和|he 测试|ceshi 把|ba 裸片|luopian 装进|zhuangjin
+外壳|waike 并|bing 检验|jianyan 功能|gongneng
+`);
+
+/* 二、存储器与存算一体 */
+const ZH_IC_CIM = pyList(`
+传统|chuantong 的|de 计算|jisuan 架构|jiagou 把|ba 存储|cunchu 和|he 计算|jisuan 分开|fenkai
+数据|shuju 在|zai 内存|neicun 和|he 处理器|chuliqi 之间|zhijian 来回|laihui 搬运|banyun
+这|zhe 条|tiao 通路|tonglu 的|de 带宽|daikuan 和|he 功耗|gonghao 已经|yijing 成为|chengwei 瓶颈|pingjing
+存算一体|cunsuanyiti 的|de 思路|silu 是|shi 让|rang 存储|cunchu 单元|danyuan 自己|ziji 完成|wancheng
+一部分|yibufen 计算|jisuan
+例如|liru 用|yong 磁性|cixing 隧道|suidao 结|jie 的|de 电阻|dianzu 状态|zhuangtai 表示|biaoshi 权重|quanzhong
+再|zai 通过|tongguo 基尔霍夫|jierhuofu 定律|dinglv 在|zai 模拟|moni 域|yu 完成|wancheng 乘加|chengjia
+这样|zheyang 可以|keyi 省掉|shengdiao 大量|daliang 的|de 数据|shuju 搬运|banyun
+但|dan 模拟|moni 计算|jisuan 的|de 精度|jingdu 一致性|yizhixing 和|he 工艺|gongyi 偏差|piancha
+仍然|rengran 是|shi 难点|nandian
+`);
+
+/* 三、从 RTL 到版图 */
+const ZH_IC_FLOW = pyList(`
+数字|shuzi 芯片|xinpian 的|de 设计|sheji 从|cong 寄存器|jicunqi 传输|chuanshu 级|ji 开始|kaishi
+工程师|gongchengshi 把|ba 电路|dianlu 的|de 行为|xingwei 写进|xiejin 代码|daima
+然后|ranhou 通过|tongguo 逻辑|luoji 综合|zonghe 映射|yingshe 到|dao 标准|biaozhun 单元|danyuan 库|ku
+综合|zonghe 之后|zhihou 要|yao 做|zuo 形式|xingshi 验证|yanzheng
+确认|queren 网表|wangbiao 和|he 源|yuan 代码|daima 等价|dengjia
+接着|jiezhe 是|shi 布局|buju 布线|buxian 决定|jueding 每个|meige 单元|danyuan 放在|fangzai 哪里|nali
+怎么|zenme 连|lian 起来|qilai
+最后|zuihou 提取|tiqu 寄生|jisheng 参数|canshu 做|zuo 时序|shixu 和|he 功耗|gonghao 分析|fenxi
+如果|ruguo 不|bu 满足|manzu 约束|yueshu 就|jiu 要|yao 回到|huidao 前面|qianmian 的|de 步骤|buzhou
+反复|fanfu 迭代|diedai
+`);
+
+/* 按原顺序出题（文章必须顺着打，不能随机挑词）*/
+function pySequence(items) {
+  return {
+    items,
+    target: items.map((it) => it.p + ' ').join(''),
+  };
+}
+
+/* ============================================================
    三点五、拼音中文打字素材
    写法：汉字|拼音（不带声调、全小写、连写）
    ============================================================ */
@@ -768,6 +1077,10 @@ const CODE_TRACK = {
             { id: 'cp4', title: 'STL 常用写法', desc: 'vector / map / set / sort', build: () => pickBlocks(CPP_BLOCKS_STL, 3) },
             { id: 'cp5', title: '类与结构体', desc: 'class / struct / public / private', build: () => pickBlocks(CPP_BLOCKS_CLASS, 2) },
             { id: 'cp6', title: '完整程序', desc: '含 main 函数的完整 C++ 程序', build: () => R.pick(CPP_PROGRAMS) },
+            {
+              id: 'cp9', title: '完整项目：成绩管理', desc: '结构体 + 类 + vector + sort + lambda，57 行能跑的小项目',
+              build: () => CPP_PROJECT,
+            },
           ],
         },
         {
@@ -788,6 +1101,34 @@ const CODE_TRACK = {
         },
       ],
     },
+    {
+      id: 'verilog', name: '④ Verilog',
+      groups: [
+        {
+          title: 'Verilog 入门 · 从零到能写模块',
+          levels: [
+            {
+              id: 'vl1', title: '关键字与符号', desc: 'module / always / posedge / <= …',
+              build: () => {
+                const picked = R.pickN(VLG_SYMBOLS, 26);
+                let out = '';
+                for (let i = 0; i < picked.length; i++) {
+                  out += picked[i] + ' ';
+                  if ((i + 1) % 6 === 0) out += '\n';
+                }
+                return out;
+              },
+            },
+            { id: 'vl2', title: '端口与线网声明', desc: 'input / output / wire / reg / parameter', build: () => pickLines(VLG_LINES_PORT, 10) },
+            { id: 'vl3', title: '模块结构', desc: 'module … endmodule 的完整骨架', build: () => pickBlocks(VLG_BLOCKS_MODULE, 2) },
+            { id: 'vl4', title: '组合逻辑 assign', desc: '连续赋值、位运算、拼接', build: () => pickBlocks(VLG_BLOCKS_COMB, 2) },
+            { id: 'vl5', title: '时序逻辑 always', desc: '时钟沿触发、非阻塞赋值 <=', build: () => pickBlocks(VLG_BLOCKS_SEQ, 2) },
+            { id: 'vl6', title: '完整模块：分频器 / 计数器', desc: '带 parameter 和复位逻辑', build: () => pickBlocks(VLG_MODULES, 2) },
+            { id: 'vl7', title: 'testbench 激励', desc: 'initial / forever / #延时 / 实例化', build: () => pickBlocks(VLG_TESTBENCH, 1) },
+          ],
+        },
+      ],
+    },
   ],
 };
 
@@ -796,6 +1137,43 @@ CODE_TRACK.tabs[1].groups[0].levels.push({
   id: 'py6', title: 'Python 关键字', desc: '35 个关键字随机出现',
   build: () => R.pickN(PY_KEYWORDS, 30).map((k) => [k, k, R.pick(PY_KEYWORDS)].join(' ')).join('\n'),
 });
+
+/* ============================================================
+   四点五、文章练习
+   ============================================================ */
+
+const ARTICLE_TRACK = {
+  id: 'articles',
+  name: '文章练习',
+  tabs: [
+    {
+      id: 'en-paper', name: '① 英文论文',
+      levels: [
+        {
+          id: 'ar-e1', title: 'Attention 摘要', desc: 'Vaswani et al. 2017 · arXiv:1706.03762 摘要原文',
+          build: () => EN_ATTENTION_ABSTRACT,
+        },
+        { id: 'ar-e2', title: '导读：为什么去掉循环', desc: '原创导读 · 约 100 词', build: () => EN_ATTENTION_INTRO },
+        { id: 'ar-e3', title: '导读：自注意力怎么算', desc: 'query / key / value 与缩放点积', build: () => EN_ATTENTION_SELF },
+        { id: 'ar-e4', title: '导读：多头注意力', desc: '多个子空间并行看序列', build: () => EN_ATTENTION_HEADS },
+        { id: 'ar-e5', title: '导读：位置编码与并行化', desc: '正弦编码 + 训练成本', build: () => EN_ATTENTION_POS },
+        {
+          id: 'ar-e6', title: '论文精读挑战', desc: '摘要 + 四段导读连打，约 580 词',
+          build: () => [EN_ATTENTION_ABSTRACT, EN_ATTENTION_INTRO, EN_ATTENTION_SELF,
+            EN_ATTENTION_HEADS, EN_ATTENTION_POS].join('\n\n'),
+        },
+      ],
+    },
+    {
+      id: 'zh-ic', name: '② 中文 · 集成电路',
+      levels: [
+        { id: 'ar-z1', title: '芯片是怎么造出来的', desc: '原创学习材料 · 60 词 · 打拼音', unit: () => pySequence(ZH_IC_MAKE) },
+        { id: 'ar-z2', title: '存储器与存算一体', desc: '原创学习材料 · 76 词 · 打拼音', unit: () => pySequence(ZH_IC_CIM) },
+        { id: 'ar-z3', title: '从 RTL 到版图', desc: '原创学习材料 · 70 词 · 打拼音', unit: () => pySequence(ZH_IC_FLOW) },
+      ],
+    },
+  ],
+};
 
 /* ============================================================
    五、拼音中文打字关卡

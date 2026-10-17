@@ -18,6 +18,7 @@
     <button class="nav-btn" data-screen="code">编程打字</button>
     <button class="nav-btn" data-screen="english">英文练习</button>
     <button class="nav-btn" data-screen="pinyin">拼音打字</button>
+    <button class="nav-btn" data-screen="articles">文章练习</button>
     <button class="nav-btn" data-screen="custom">自定义</button>
     <button class="nav-btn" data-screen="test">速度测试</button>
     <button class="nav-btn" data-screen="records">成绩记录</button>
@@ -74,6 +75,12 @@
         <h3>自定义练习</h3>
         <p>把课堂笔记、要背的课文、你自己的代码贴进来，就练你自己的那一段。</p>
         <span class="hc-tag">练自己的内容</span>
+      </button>
+      <button class="home-card" data-goto="articles">
+        <div class="hc-icon">📄</div>
+        <h3>文章练习</h3>
+        <p>长篇耐力训练：Transformer 论文导读（英文）+ 集成电路技术文章（中文）。</p>
+        <span class="hc-tag">长篇内容</span>
       </button>
       <button class="home-card" data-goto="test">
         <div class="hc-icon">⏱</div>
@@ -233,6 +240,27 @@
     </div>
     <div class="tabs" id="pinyinTabs"></div>
     <div class="level-grid" id="pinyinLevels"></div>
+  </section>
+
+  <!-- ================= 文章练习 ================= -->
+  <section class="screen" id="screen-articles">
+    <div class="panel-head">
+      <h2>文章练习</h2>
+      <p>长篇内容的耐力训练。练完一段论文或技术文章，手指对长句子的节奏会明显更稳。</p>
+    </div>
+    <div class="tabs" id="articleTabs"></div>
+    <div class="level-grid" id="articleLevels"></div>
+
+    <div class="card" id="articleNotice">
+      <h3>关于内容来源</h3>
+      <ul class="tips">
+        <li><b>英文论文</b>：只引用《Attention Is All You Need》的<b>摘要原文</b>（arXiv:1706.03762，Vaswani et al., 2017），
+          其余几关是<b>原创导读</b> —— 用我自己的话讲同一件事，没有整篇转载论文。</li>
+        <li><b>中文集成电路</b>：<b>原创学习材料</b>，围绕存算一体、集成电路设计流程等方向撰写，
+          <b>不是任何论文的原文</b>，也不代表任何作者的观点。知网论文有版权，不能抓取或整篇转载。</li>
+        <li>想练自己的论文或笔记？用顶栏的「<b>自定义</b>」把文本贴进去就行。</li>
+      </ul>
+    </div>
   </section>
 
   <!-- ================= 自定义练习 ================= -->

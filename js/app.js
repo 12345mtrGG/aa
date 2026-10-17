@@ -336,6 +336,7 @@ function renderAllGrids() {
   renderFingerLevels();
   renderTabbedTrack(ENGLISH_TRACK, $('englishTabs'), $('englishLevels'), 'english');
   renderTabbedTrack(PINYIN_TRACK, $('pinyinTabs'), $('pinyinLevels'), 'pinyin');
+  renderTabbedTrack(ARTICLE_TRACK, $('articleTabs'), $('articleLevels'), 'articles');
   renderTabbedTrack(CODE_TRACK, $('codeTabs'), $('codeLevels'), 'code');
 }
 
@@ -1044,7 +1045,7 @@ function bindSeg(container, onChange) {
 }
 
 /** 这些界面里放的是「关卡卡片」，每次进入都要重新生成预览 */
-const GRID_SCREENS = ['finger', 'english', 'pinyin', 'code'];
+const GRID_SCREENS = ['finger', 'english', 'pinyin', 'articles', 'code'];
 
 function init() {
   Store.load();

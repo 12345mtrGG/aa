@@ -35,6 +35,7 @@ vm.runInContext('FINGER_LESSONS', ctx).forEach((l) =>
 const tracks = [
   vm.runInContext('ENGLISH_TRACK', ctx),
   vm.runInContext('PINYIN_TRACK', ctx),
+  vm.runInContext('ARTICLE_TRACK', ctx),
   vm.runInContext('CODE_TRACK', ctx),
 ];
 tracks.forEach((t) => t.tabs.forEach((tab) => {
@@ -49,6 +50,19 @@ allLevels.forEach((l) => {
   let u = null;
   try { u = l.content(); } catch (e) { ok(l.id, false, '生成内容抛异常: ' + e.message); return; }
   ok(`${l.id} 生成文本`, u && typeof u.target === 'string' && u.target.length >= 20, `长度=${u && u.target && u.target.length}`);
+});
+
+/* 全局不变量：所有练习目标里只能出现「键盘打得出来」的字符。
+   一旦混进汉字 / 全角标点 / emoji，严格模式会永久卡在那一格。 */
+const typoable = new Set(['\n', ' ', '\t']);
+allLevels.forEach((l) => {
+  let u = null;
+  try { u = l.content(); } catch (e) { return; }
+  if (!u || !u.target) return;
+  const bad = [...new Set([...u.target].filter((c) => !typoable.has(c) && !keyInfoForChar(c)))];
+  if (bad.length) {
+    ok(`${l.id} 只含可输入字符`, false, JSON.stringify(bad.slice(0, 12)));
+  }
 });
 
 /* 连续生成 30 次，确保随机生成器不会产出空串或抛错 */
@@ -420,6 +434,89 @@ ok('全角标点会被识别', unmappable('hello，world。').size === 2, unmapp
 ok('空格换行不算问题字符', unmappable('a b\nc').size === 0);
 ok('emoji 会被识别', unmappable('ok 😀').size === 1, unmappable('ok 😀').size);
 ok('统计次数正确', (unmappable('中中中') || new Map()).get('中') === 3);
+
+/* ---------- 13. Verilog、C++ 完整项目、文章练习 ---------- */
+console.log('\n[13] Verilog / 完整项目 / 文章练习');
+
+/* 13.1 Verilog */
+const CODE_TRACK_ = vm.runInContext('CODE_TRACK', ctx);
+const vlgTab = CODE_TRACK_.tabs.find((t) => t.id === 'verilog');
+ok('编程打字有 Verilog 标签页', !!vlgTab);
+ok('Verilog 有 7 关', vlgTab && vlgTab.groups[0].levels.length === 7,
+  vlgTab && vlgTab.groups[0].levels.length);
+
+/* 关键：Verilog 代码里的每一个字符都必须能用键盘打出来，
+   否则练习会卡在那一格（和自定义练习是同一类问题） */
+vlgTab.groups[0].levels.forEach((lv) => {
+  const txt = lv.build();
+  const bad = [...new Set([...txt].filter((c) => c !== '\n' && c !== ' ' && c !== '\t' && !keyInfoForChar(c)))];
+  ok(`Verilog「${lv.title}」只含可输入字符`, bad.length === 0, JSON.stringify(bad));
+});
+const vlgAll = vlgTab.groups[0].levels.map((l) => l.build()).join('\n');
+ok('Verilog 覆盖了 module/endmodule', /module/.test(vlgAll) && /endmodule/.test(vlgAll));
+ok('Verilog 覆盖了 always 与 posedge', /always/.test(vlgAll) && /posedge/.test(vlgAll));
+ok('Verilog 覆盖了非阻塞赋值 <=', vlgAll.includes('<='));
+ok('Verilog 覆盖了 testbench 的 initial/#', /initial/.test(vlgAll) && /#\d/.test(vlgAll));
+
+/* 13.2 C++ 完整项目 */
+const CPP_PROJECT_ = vm.runInContext('CPP_PROJECT', ctx);
+ok('C++ 项目有 main 函数', /int main\s*\(/.test(CPP_PROJECT_));
+ok('C++ 项目有类定义', /class ScoreBook/.test(CPP_PROJECT_));
+ok('C++ 项目有结构体', /struct Student/.test(CPP_PROJECT_));
+ok('C++ 项目行数够（≥40 行）', CPP_PROJECT_.split('\n').length >= 40, CPP_PROJECT_.split('\n').length);
+const badProj = [...new Set([...CPP_PROJECT_].filter((c) => c !== '\n' && c !== ' ' && !keyInfoForChar(c)))];
+ok('C++ 项目只含可输入字符', badProj.length === 0, JSON.stringify(badProj));
+const cppTab = CODE_TRACK_.tabs.find((t) => t.id === 'cpp');
+ok('C++ 里有「完整项目」这一关',
+  cppTab.groups.some((g) => g.levels.some((l) => l.id === 'cp9')));
+
+/* 13.3 文章练习 */
+const ART = vm.runInContext('ARTICLE_TRACK', ctx);
+ok('文章练习有 2 个标签页', ART.tabs.length === 2, ART.tabs.map((t) => t.name).join(' / '));
+
+const enTab = ART.tabs.find((t) => t.id === 'en-paper');
+ok('英文论文有 6 关', enTab && enTab.levels.length === 6, enTab && enTab.levels.length);
+enTab.levels.forEach((lv) => {
+  const t = lv.build();
+  ok(`英文文章「${lv.title}」长度够（≥400 字符）`, t.length >= 400, t.length);
+  const bad = [...new Set([...t].filter((c) => c !== '\n' && c !== ' ' && !keyInfoForChar(c)))];
+  ok(`英文文章「${lv.title}」只含可输入字符`, bad.length === 0, JSON.stringify(bad));
+});
+ok('英文摘要是《Attention Is All You Need》的原文（首句）',
+  /The dominant sequence transduction models/.test(enTab.levels[0].build()));
+
+const zhTab = ART.tabs.find((t) => t.id === 'zh-ic');
+ok('中文集成电路有 3 关', zhTab && zhTab.levels.length === 3, zhTab && zhTab.levels.length);
+
+const zhAll = [].concat(
+  vm.runInContext('ZH_IC_MAKE', ctx),
+  vm.runInContext('ZH_IC_CIM', ctx),
+  vm.runInContext('ZH_IC_FLOW', ctx),
+);
+ok('中文文章词数够（≥180 词）', zhAll.length >= 180, zhAll.length);
+ok('中文文章拼音全是小写字母', zhAll.every((i) => /^[a-z]+$/.test(i.p)),
+  JSON.stringify(zhAll.filter((i) => !/^[a-z]+$/.test(i.p)).slice(0, 3)));
+const zhSyl = zhAll.filter((i) => {
+  const runs = (i.p.match(/[aeiouv]+/g) || []).length;
+  return runs > i.w.length || i.w.length - runs > 1;
+});
+ok('中文文章拼音音节数正确', zhSyl.length === 0,
+  JSON.stringify(zhSyl.slice(0, 5).map((i) => `${i.w}=${i.p}`)));
+
+/* 文章必须按原文顺序出题，不能像词汇池那样随机挑 */
+const seqUnit = zhTab.levels[0].unit();
+ok('中文文章按原文顺序出题',
+  seqUnit.items[0].w === '一块' && seqUnit.target.startsWith('yikuai '),
+  seqUnit.items[0].w + ' / ' + seqUnit.target.slice(0, 14));
+ok('中文文章 target 只含小写字母和空格', /^[a-z ]+$/.test(seqUnit.target));
+
+/* 整篇文章能被引擎顺次打完 */
+{
+  const u = zhTab.levels[0].unit();
+  const s = newSession(u.target);
+  for (const ch of u.target) s.press(ch);
+  ok('中文文章能整篇打完', s.finished === true && s.stats().accuracy === 100, s.stats().accuracy);
+}
 
 console.log(`\n===== 通过 ${pass} 项，失败 ${fail} 项 =====`);
 process.exit(fail ? 1 : 0);
