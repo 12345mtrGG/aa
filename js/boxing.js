@@ -82,12 +82,27 @@ const Boxing = {
     const ids = ['boxTimer', 'boxYouHp', 'boxFoeHp', 'boxYouHpTxt', 'boxFoeHpTxt',
       'boxYouFig', 'boxFoeFig', 'boxStage', 'boxBanner', 'boxComboTxt', 'boxPunchName',
       'boxQueue', 'boxHint', 'boxOverlay', 'boxResIcon', 'boxResTitle', 'boxResStats',
-      'boxResMsg', 'boxSound'];
+      'boxResMsg', 'boxSound', 'fistLeft', 'fistRight'];
     ids.forEach((id) => { this.el[id] = $(id); });
 
     $('boxBack').addEventListener('click', () => this.quit());
     $('boxAgain').addEventListener('click', () => this.start());
     $('boxExit').addEventListener('click', () => this.quit());
+  },
+
+  /** 这个键该用哪只手 → 哪只拳套出拳。左手键出左拳，右手键出右拳。 */
+  sideOf(ch) {
+    const info = keyInfoForChar(ch);
+    if (!info) return 'right';
+    return info.finger.charAt(0) === 'L' ? 'left' : 'right';
+  },
+
+  /** 清掉拳套上的临时状态（出拳、待命、受击闪烁） */
+  clearFistState() {
+    [this.el.fistLeft, this.el.fistRight].forEach((f) => {
+      if (f) f.classList.remove('thrust', 'ready');
+    });
+    if (this.el.boxStage) this.el.boxStage.classList.remove('hitflash', 'shake');
   },
 
   /* ---------- 难度切换 ---------- */
@@ -136,8 +151,8 @@ const Boxing = {
 
     this.el.boxOverlay.classList.add('hidden');
     this.el.boxStage.classList.remove('danger');
-    this.el.boxYouFig.classList.remove('hitted');
     this.el.boxFoeFig.classList.remove('hitted');
+    this.clearFistState();
 
     // 顺序很重要：先把单例虚拟键盘挂到拳击台上，再去做高亮，
     // 否则高亮会落在上一个界面的键盘上、然后被重绘冲掉。
@@ -239,7 +254,8 @@ const Boxing = {
       this.foeHp = Math.max(0, this.foeHp - dmg);
 
       this.advance();
-      this.punchFx(dmg, mult);
+      // 用「刚按下的这个键」决定出哪只手，而不是下一个键
+      this.punchFx(dmg, mult, this.sideOf(ch));
       Keyboard.flash(keyInfoForChar(want) ? keyInfoForChar(want).id : null);
       playSound(true);
       this.updateHud();
@@ -291,82 +307,92 @@ const Boxing = {
     });
   },
 
+  /** 哪只拳套亮起来待命 —— 让玩家一眼看出这一拳该用哪只手 */
+  setReadyFist(ch) {
+    const side = ch ? this.sideOf(ch) : null;
+    if (this.el.fistLeft) this.el.fistLeft.classList.toggle('ready', side === 'left');
+    if (this.el.fistRight) this.el.fistRight.classList.toggle('ready', side === 'right');
+  },
+
   updateHint() {
     const ch = this.queue[0];
     if (this.over || !ch) {
       this.el.boxHint.innerHTML = '<span class="muted">回合结束</span>';
       Keyboard.clearHighlight();
+      this.setReadyFist(null);
       return;
     }
     const info = Keyboard.highlightChar(ch);
     if (!info) { this.el.boxHint.innerHTML = '<span class="muted">—</span>'; return; }
+    this.setReadyFist(ch);
+
     const f = FINGER_INFO[info.finger];
+    const fistName = this.sideOf(ch) === 'left' ? '左拳' : '右拳';
     // 倒计时阶段就把第一个出拳键亮出来，玩家可以先把手指定好位
     const lead = this.running ? '出拳键' : '准备';
     this.el.boxHint.innerHTML =
       `<span class="muted">${lead}</span> <kbd>${escapeHtml(ch === ' ' ? '空格' : ch)}</kbd>` +
       `<span class="finger-tag" style="background:${f.color}">${f.name}</span>` +
+      `<span class="fist-tag ${this.sideOf(ch)}">${fistName}</span>` +
       (this.running && this.combo >= 3
         ? `<span class="muted">连击加成 ×${boxDamage(this.combo).mult}</span>`
         : '');
   },
 
   /* ---------- 特效 ---------- */
-  /** 拳头要横穿整个拳台、正好落在对手身上，飞行距离按拳台实际宽度算 */
-  punchTravel() {
-    const w = this.el.boxStage.clientWidth || 900;
-    return Math.max(120, w - 200);
-  },
-
-  punchFx(dmg, mult) {
+  /** 命中点：对手的脸（第一视角下就在屏幕中上方） */
+  punchFx(dmg, mult, side) {
     const stage = this.el.boxStage;
-    const go = this.punchTravel();
 
-    const hit = document.createElement('div');
-    hit.className = 'fx-punch';
-    hit.textContent = '🥊';
-    hit.style.setProperty('--go', go + 'px');
-    stage.appendChild(hit);
-    setTimeout(() => hit.remove(), 420);
+    // 出拳的拳套向前顶一下
+    const fist = side === 'left' ? this.el.fistLeft : this.el.fistRight;
+    if (fist) {
+      // 同一只手连打时，上一次的定时器会把这次动画提前掐断，所以按拳套分别记时
+      clearTimeout(fist._thrustTimer);
+      fist.classList.remove('thrust');
+      void fist.offsetWidth;          // 强制重排，让同一只手连打也能重新播放动画
+      fist.classList.add('thrust');
+      fist._thrustTimer = setTimeout(() => {
+        fist.classList.remove('thrust');
+        fist._thrustTimer = null;
+      }, 260);
+    }
 
     const pow = document.createElement('div');
     pow.className = 'fx-pow' + (mult >= 3 ? ' big' : '');
     pow.textContent = '💥';
     stage.appendChild(pow);
-    setTimeout(() => pow.remove(), 420);
+    setTimeout(() => pow.remove(), 440);
 
     const num = document.createElement('div');
     num.className = 'fx-dmg foe' + (mult >= 3 ? ' big' : '');
     num.textContent = '-' + dmg;
     stage.appendChild(num);
-    setTimeout(() => num.remove(), 700);
+    setTimeout(() => num.remove(), 720);
 
+    // 对手被打退
+    this.el.boxFoeFig.classList.remove('hitted');
+    void this.el.boxFoeFig.offsetWidth;
     this.el.boxFoeFig.classList.add('hitted');
-    setTimeout(() => this.el.boxFoeFig.classList.remove('hitted'), 200);
+    setTimeout(() => this.el.boxFoeFig.classList.remove('hitted'), 250);
   },
 
   counterFx(want) {
     const stage = this.el.boxStage;
 
-    const counter = document.createElement('div');
-    counter.className = 'fx-counter';
-    counter.textContent = '🥊';
-    counter.style.setProperty('--go', this.punchTravel() + 'px');
-    stage.appendChild(counter);
-    setTimeout(() => counter.remove(), 420);
+    // 第一视角被打中：整块屏幕红一下 + 震一下
+    stage.classList.remove('hitflash', 'shake');
+    void stage.offsetWidth;
+    stage.classList.add('hitflash', 'shake');
+    setTimeout(() => {
+      stage.classList.remove('hitflash', 'shake');
+    }, 360);
 
     const num = document.createElement('div');
     num.className = 'fx-dmg you';
     num.textContent = '-' + BOX_MISS_DAMAGE;
     stage.appendChild(num);
-    setTimeout(() => num.remove(), 700);
-
-    this.el.boxYouFig.classList.add('hitted');
-    stage.classList.add('shake');
-    setTimeout(() => {
-      this.el.boxYouFig.classList.remove('hitted');
-      stage.classList.remove('shake');
-    }, 240);
+    setTimeout(() => num.remove(), 720);
 
     // 顺便告诉玩家他按错了哪个键
     const info = keyInfoForChar(want);
@@ -442,6 +468,7 @@ const Boxing = {
       `<div><b>${this.damageDealt}</b><span>造成伤害</span></div>`;
     this.el.boxResMsg.textContent = msg;
     this.el.boxOverlay.classList.remove('hidden');
+    this.setReadyFist(null);
   },
 
   /* ---------- 退出 ---------- */
@@ -457,6 +484,7 @@ const Boxing = {
     this.el.boxOverlay.classList.add('hidden');
     this.hideBanner();
     Keyboard.clearHighlight();
+    this.clearFistState();
   },
 
   /** 回到指法基础页 */

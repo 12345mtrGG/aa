@@ -342,6 +342,40 @@ async function run() {
     ok('打对后命中数 +1', boxState('hits') === 1, boxState('hits'));
     ok('第一拳伤害是基础伤害', foe0 - boxState('foeHp') === 10, foe0 - boxState('foeHp'));
 
+    // ---- 第一视角：对手正面 / 双拳在下方 / 出拳手别跟按键走 ----
+    ok('对手是正面 SVG 角色', !!d.querySelector('#boxFoeFig svg'));
+    ok('对手有护架双拳', d.querySelectorAll('#boxFoeFig .foe-glove').length === 2,
+      d.querySelectorAll('#boxFoeFig .foe-glove').length);
+    ok('有左右两只拳套', !!d.getElementById('fistLeft') && !!d.getElementById('fistRight'));
+    ok('拳套有手腕护套', d.querySelectorAll('.fist .cuff').length === 2);
+
+    // 「待命」的那只拳套应该和下一个键该用的手一致
+    const sideNow = win.eval('Boxing.sideOf("' + curPunchKey() + '")');
+    const readyEl = d.querySelector('.fist.ready');
+    ok('待命拳套和下一个键的手一致',
+      readyEl && readyEl.id === (sideNow === 'left' ? 'fistLeft' : 'fistRight'),
+      `${curPunchKey()} 应该是 ${sideNow}，实际亮的是 ${readyEl ? readyEl.id : '无'}`);
+    ok('只有一只拳套处于待命', d.querySelectorAll('.fist.ready').length === 1);
+
+    // 左右手各打一拳，验证出拳动画落在正确的那只手上
+    ['left', 'right'].forEach((wantSide) => {
+      // 找一个属于这只手的键（只在当前难度键池里找）
+      const pool = 'asdfjkl;';
+      const key = pool.split('').find((c) => win.eval(`Boxing.sideOf("${c}")`) === wantSide);
+      if (!key) return;
+      // 先把这个键推到队首
+      win.eval(`Boxing.queue[0] = "${key}"`);
+      win.eval('Boxing.renderQueue()');
+      // 清掉上一拳可能还没超时的 thrust，否则两只手会同时带这个类（测试干扰，不是应用 bug）
+      win.eval('Boxing.clearFistState()');
+      punch(key);
+      const el = d.getElementById(wantSide === 'left' ? 'fistLeft' : 'fistRight');
+      const other = d.getElementById(wantSide === 'left' ? 'fistRight' : 'fistLeft');
+      ok(`${wantSide === 'left' ? '左' : '右'}手键触发对应拳套出拳`,
+        el.classList.contains('thrust') && !other.classList.contains('thrust'),
+        `用 ${key} 打，左=${el.classList.contains('thrust')} 右=${other.classList.contains('thrust')}`);
+    });
+
     // 打错 → 被反击
     const foe1 = boxState('foeHp');
     const you0 = boxState('youHp');
@@ -409,6 +443,61 @@ async function run() {
     ok('拳击容器里的键盘已清空', d.querySelectorAll('#boxingKeyboard .key').length === 0,
       d.querySelectorAll('#boxingKeyboard .key').length);
     ok('练习界面的键盘能正常高亮', d.querySelectorAll('#keyboard .key.hl').length >= 1);
+
+    section('13. 自定义练习');
+    [...d.querySelectorAll('.nav-btn')].find((b) => b.dataset.screen === 'custom').click();
+    ok('切到自定义练习页', d.getElementById('screen-custom').classList.contains('active'));
+    ok('有文本输入框', !!d.getElementById('customText'));
+    ok('导航里有「自定义」入口',
+      [...d.querySelectorAll('.nav-btn')].some((b) => b.dataset.screen === 'custom'));
+    ok('首页也有自定义卡片', !!d.querySelector('[data-goto="custom"]'));
+
+    const ta = d.getElementById('customText');
+    const errEl = d.getElementById('customErr');
+    const fireInput = () => ta.dispatchEvent(new win.Event('input', { bubbles: true }));
+
+    ta.value = 'int main() {\n\treturn 0;\n}';
+    fireInput();
+    ok('字符计数会更新', /个字符/.test(d.getElementById('customCount').textContent),
+      d.getElementById('customCount').textContent);
+    ok('计数里带行数', /3 行/.test(d.getElementById('customCount').textContent),
+      d.getElementById('customCount').textContent);
+
+    // 1) 中文 / 全角标点必须被拦下来（否则逐字比对会卡死）
+    ta.value = '你好，世界。今天天气很好。';
+    fireInput();
+    d.getElementById('customStart').click();
+    ok('中文内容被拦下', !errEl.hidden && /键盘上打不出来/.test(errEl.textContent), errEl.textContent);
+    ok('被拦下时没有进入练习', d.getElementById('screen-custom').classList.contains('active'));
+
+    // 1b) 太短也要拦
+    ta.value = 'hi';
+    fireInput();
+    d.getElementById('customStart').click();
+    ok('太短的文本被拦下', !errEl.hidden && /太短/.test(errEl.textContent), errEl.textContent);
+
+    // 2) 合法代码能开始，且目标文本原样保留
+    ta.value = 'int main() {\n\treturn 0;\n}';
+    fireInput();
+    ok('输入合法时错误提示消失', errEl.hidden, errEl.textContent);
+    d.getElementById('customStart').click();
+    ok('合法文本进入练习', d.getElementById('screen-practice').classList.contains('active'));
+    const customTarget = 'int main() {\n    return 0;\n}';   // Tab 已按默认选项转成 4 空格
+    ok('目标文本与规整后的输入一致', readTarget(d) === customTarget, JSON.stringify(readTarget(d)));
+    ok('标题显示为自定义练习', d.getElementById('pTitle').textContent === '自定义练习',
+      d.getElementById('pTitle').textContent);
+    ok('自定义练习隐藏了「下一组」', d.getElementById('btnNext').style.display === 'none');
+
+    // 3) 能完整打完
+    typeAll(win, customTarget);
+    ok('自定义练习可以打完', !d.getElementById('modalMask').classList.contains('hidden'));
+    ok('自定义练习正确率 100%', d.getElementById('sAcc').textContent === '100.0%',
+      d.getElementById('sAcc').textContent);
+
+    // 4) 返回自定义页
+    d.getElementById('mClose').click();
+    ok('返回自定义练习页', d.getElementById('screen-custom').classList.contains('active'));
+    ok('返回后文本还在', ta.value.length > 0);
 
   } catch (e) {
     fail++;

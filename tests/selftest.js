@@ -386,5 +386,40 @@ ids.forEach((lv) => {
   ok(`${BOX_LEVELS[lv].name}难度能挨 ${strikes} 次反击`, strikes >= 10, strikes);
 });
 
+/* ---------- 12. 自定义练习：文本规整 ---------- */
+console.log('\n[12] 自定义练习');
+const norm = vm.runInContext('normalizeCustomText', ctx);
+
+ok('CRLF 统一成 LF', norm('a\r\nb\rc', true) === 'a\nb\nc', JSON.stringify(norm('a\r\nb\rc', true)));
+ok('Tab 可转成 4 个空格', norm('if (x) {\n\treturn 1;\n}', true) === 'if (x) {\n    return 1;\n}',
+  JSON.stringify(norm('if (x) {\n\treturn 1;\n}', true)));
+ok('关掉选项就保留 Tab', norm('a\tb', false) === 'a\tb', JSON.stringify(norm('a\tb', false)));
+ok('去掉每行行尾多余空格', norm('hello   \nworld  ', true) === 'hello\nworld',
+  JSON.stringify(norm('hello   \nworld  ', true)));
+ok('去掉开头空行', norm('\n\n你好', true) === '你好', JSON.stringify(norm('\n\n你好', true)));
+ok('去掉结尾空行', norm('你好\n\n\n', true) === '你好', JSON.stringify(norm('你好\n\n\n', true)));
+ok('保留中间的空行', norm('第一段\n\n第二段', true) === '第一段\n\n第二段',
+  JSON.stringify(norm('第一段\n\n第二段', true)));
+ok('空输入返回空串', norm('', true) === '' && norm(null, true) === '' && norm(undefined, true) === '');
+ok('纯空白输入被清成空串', norm(' \n\t\n ', true) === '', JSON.stringify(norm(' \n\t\n ', true)));
+ok('只有空格和换行的行会被压成空行',
+  norm('a\n   \nb', true) === 'a\n\nb', JSON.stringify(norm('a\n   \nb', true)));
+ok('中文和代码混排不被破坏',
+  norm('// 注释\nint main() {\n    return 0;\n}', true) === '// 注释\nint main() {\n    return 0;\n}');
+
+/* 从网页 / Word 复制常带进来的隐形字符 */
+ok('去掉 BOM', norm('\uFEFFhello', true) === 'hello', JSON.stringify(norm('\uFEFFhello', true)));
+ok('去掉零宽空格/零宽连接符', norm('a\u200Bb\u200Dc', true) === 'abc',
+  JSON.stringify(norm('a\u200Bb\u200Dc', true)));
+
+/* 打不出来的字符必须在开始前被拦住，否则严格模式会卡死 */
+const unmappable = vm.runInContext('unmappableChars', ctx);
+ok('纯英文+代码没有打不出的字符', unmappable('int main() {\n    return 0;\n}').size === 0);
+ok('中文汉字会被识别', unmappable('你好').size === 2, unmappable('你好').size);
+ok('全角标点会被识别', unmappable('hello，world。').size === 2, unmappable('hello，world。').size);
+ok('空格换行不算问题字符', unmappable('a b\nc').size === 0);
+ok('emoji 会被识别', unmappable('ok 😀').size === 1, unmappable('ok 😀').size);
+ok('统计次数正确', (unmappable('中中中') || new Map()).get('中') === 3);
+
 console.log(`\n===== 通过 ${pass} 项，失败 ${fail} 项 =====`);
 process.exit(fail ? 1 : 0);

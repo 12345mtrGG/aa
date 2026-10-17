@@ -91,7 +91,13 @@ f.addEventListener('load', () => {
       }
     };
 
-    if (['finger', 'code', 'english', 'pinyin', 'records', 'test'].includes(screen)) nav(screen);
+    if (['finger', 'code', 'english', 'pinyin', 'custom', 'records', 'test'].includes(screen)) nav(screen);
+
+    if (screen === 'custom') {
+      const ta = d.getElementById('customText');
+      ta.value = '// 期末复习：链表反转\nListNode* reverse(ListNode* head) {\n    ListNode* prev = nullptr;\n    while (head) {\n        ListNode* next = head->next;\n        head->next = prev;\n        prev = head;\n        head = next;\n    }\n    return prev;\n}';
+      ta.dispatchEvent(new w.Event('input', { bubbles: true }));
+    }
 
     if (screen === 'practice') {
       nav('code');

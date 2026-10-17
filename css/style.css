@@ -500,6 +500,64 @@ button.home-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-l
 
 .hidden { display: none !important; }
 
+/* ---------------- 自定义练习 ---------------- */
+.custom-box {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px 20px 16px; box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.custom-label {
+  display: block; font-size: 13px; font-weight: 700; color: var(--ink-3);
+  letter-spacing: .5px; margin-bottom: 8px;
+}
+#customText {
+  width: 100%; box-sizing: border-box;
+  font-family: var(--mono); font-size: 14.5px; line-height: 1.75;
+  padding: 13px 15px; border: 1px solid var(--line); border-radius: 10px;
+  background: #fbfcfe; color: var(--ink); resize: vertical;
+  transition: border-color .15s, box-shadow .15s;
+}
+#customText:focus {
+  outline: none; border-color: #b9cdfb; box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.custom-bar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 12px;
+}
+.custom-count {
+  font-size: 13px; color: var(--ink-3); margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+.custom-count.over { color: #c0392b; font-weight: 700; }
+.custom-count.warn { color: #b26a00; }
+.custom-err {
+  margin: 10px 0 0; padding: 9px 13px; border-radius: 9px;
+  background: #fdeaea; color: #b02a2a; font-size: 13.5px;
+  border: 1px solid #f6c9c9;
+}
+
+/* ============================================================
+   无障碍
+   ============================================================ */
+
+/* 跳过导航：键盘用户按 Tab 第一下就能直接进主要内容 */
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--brand); color: #fff; padding: 10px 20px;
+  border-radius: 0 0 10px 0; font-weight: 700; text-decoration: none;
+}
+.skip-link:focus { left: 0; }
+
+/* 键盘焦点必须看得见（鼠标点击不会触发，不会影响外观） */
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* 只给屏幕阅读器的文本 */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 /* ============================================================
    拳击小游戏
    ============================================================ */
@@ -556,108 +614,157 @@ button.home-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-l
 .hp-side.right .hp-bar { transform: scaleX(-1); }   /* 对手的血条从右往左掉，像对打 */
 
 /* ---- 拳台中央 ---- */
+/* ---------- 拳台：第一视角 ----------
+   玩家在擂台里向前看：对手在对面（远处、偏上），
+   自己的两只拳套在屏幕下缘（近处、很大），中间留出出拳的空间。 */
 .ring-stage {
-  position: relative; height: 136px; margin-bottom: 12px;
-  border-radius: 14px; overflow: hidden;
+  position: relative; height: 212px; margin-bottom: 12px;
+  border-radius: 16px; overflow: hidden;
+  border: 1px solid #0d1219;
   background:
-    radial-gradient(ellipse 60% 78% at 50% 108%, rgba(59,110,245,.10), transparent 70%),
-    linear-gradient(180deg, #eef2f9 0%, #e4eaf4 100%);
-  border: 1px solid #dfe5ef;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 46px;
-  transition: background .2s;
+    radial-gradient(ellipse 30% 22% at 50% 80%, rgba(255,214,170,.18), transparent 72%),
+    radial-gradient(ellipse 70% 62% at 50% 18%, #3c4a63 0%, #26314a 42%, #151c28 78%, #0f141c 100%);
+  transition: background .28s;
 }
-/* 围绳 */
-.ring-stage::before,
+/* 擂台围绳（远景，压在对手身后） */
+.ring-stage::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 10px; height: 3px;
+  background: linear-gradient(90deg, #8c3232, #b8802f, #8c3232);
+  opacity: .5; pointer-events: none;
+}
 .ring-stage::after {
-  content: ""; position: absolute; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, #d94f4f, #e8b04b, #d94f4f);
-  opacity: .38;
+  content: ""; position: absolute; left: 0; right: 0; top: 24px; height: 3px;
+  background: linear-gradient(90deg, #8c3232, #b8802f, #8c3232);
+  opacity: .28; pointer-events: none;
 }
-.ring-stage::before { top: 16px; }
-.ring-stage::after { bottom: 16px; }
 .ring-stage.shake { animation: shake .22s; }
-.ring-stage.danger { background: linear-gradient(180deg, #fff1f1 0%, #ffe3e3 100%); }
-
-.fighter {
-  position: relative; z-index: 2;
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  transition: transform .1s;
+.ring-stage.danger {
+  background: radial-gradient(ellipse 70% 62% at 50% 18%, #5a2f39 0%, #3a1f28 42%, #22121a 78%, #170d12 100%);
 }
-/* 拳手做成圆形徽章：蓝边=你，红边=对手，一眼分清谁是谁 */
-.fighter .fig {
-  display: grid; place-items: center;
-  width: 72px; height: 72px; border-radius: 50%;
-  font-size: 38px; line-height: 1;
-  background: #fff; border: 3px solid #cbd5e1;
-  box-shadow: 0 6px 18px rgba(20,30,60,.15);
-}
-.fighter.you .fig {
-  border-color: #3b82f6;
-  background: radial-gradient(circle at 35% 30%, #ffffff, #e6f0ff);
-  box-shadow: 0 6px 18px rgba(59,130,246,.28);
-}
-.fighter.foe .fig {
-  border-color: #ef4444;
-  background: radial-gradient(circle at 65% 30%, #ffffff, #ffe8e8);
-  box-shadow: 0 6px 18px rgba(239,68,68,.28);
-}
-.fighter em { font-style: normal; font-size: 12px; color: var(--ink-3); font-weight: 700; }
-.fighter.you em { color: #2563eb; }
-.fighter.foe em { color: #dc2626; }
-/* 拳台中线 */
-.ring-mid {
-  position: absolute; left: 50%; top: 20px; bottom: 20px; width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(20,30,60,.13), transparent);
-}
-.fighter.hitted { animation: fighterHit .2s; }
-@keyframes fighterHit {
-  0% { transform: translateX(0) rotate(0); }
-  30% { transform: translateX(-13px) rotate(-7deg); }
-  70% { transform: translateX(6px) rotate(3deg); }
-  100% { transform: translateX(0) rotate(0); }
-}
-.fighter.foe.hitted { animation-name: fighterHitFoe; }
-@keyframes fighterHitFoe {
-  0% { transform: translateX(0) rotate(0); }
-  30% { transform: translateX(13px) rotate(7deg); }
-  70% { transform: translateX(-6px) rotate(-3deg); }
-  100% { transform: translateX(0) rotate(0); }
+/* 被打中：红色暗角闪一下。用 box-shadow 而不是伪元素，
+   因为 ::before/::after 已经用来画擂台围绳了。 */
+.ring-stage.hitflash { animation: hitFlash .34s cubic-bezier(.4,0,1,1); }
+.ring-stage.hitflash.shake { animation: shake .22s, hitFlash .34s cubic-bezier(.4,0,1,1); }
+@keyframes hitFlash {
+  0%   { box-shadow: inset 0 0 0 0 rgba(220,38,38,0); }
+  28%  { box-shadow: inset 0 0 96px 14px rgba(220,38,38,.62); }
+  100% { box-shadow: inset 0 0 0 0 rgba(220,38,38,0); }
 }
 
-/* 特效层。飞行距离 --go 由 JS 按拳台实际宽度设置，
-   否则在大屏上拳头只飞一小段、根本够不到对手。 */
-.fx-punch, .fx-counter, .fx-pow, .fx-dmg {
-  position: absolute; z-index: 5; pointer-events: none;
+/* ---------- 对手（正面，远处） ---------- */
+.foe-view {
+  position: absolute; left: 50%; top: 4px; margin-left: -80px;
+  width: 160px; height: 184px; z-index: 2;
+  filter: drop-shadow(0 14px 16px rgba(0,0,0,.5));
+  transform-origin: 50% 80%;
+}
+.foe-view svg { width: 100%; height: 100%; display: block; }
+.foe-torso { fill: #7d2a2a; }
+.foe-neck { fill: #d39468; }
+.foe-head { fill: #eebc93; }
+.foe-hair { fill: #22262f; }
+.foe-eye { fill: #22262f; }
+.foe-brow { stroke: #22262f; stroke-width: 3.4; fill: none; stroke-linecap: round; }
+.foe-mouth { stroke: #a04a28; stroke-width: 3.4; fill: none; stroke-linecap: round; }
+.foe-glove { fill: #cf4444; }
+.foe-glove-hi { fill: rgba(255,255,255,.28); }
+
+/* 挨打：整体后仰 + 缩小一点（被打退） */
+.foe-view.hitted { animation: foeHit .24s cubic-bezier(.2,.8,.3,1); }
+@keyframes foeHit {
+  0%   { transform: scale(1) translateY(0) rotate(0deg); }
+  30%  { transform: scale(.93) translateY(-9px) rotate(-4deg); }
+  65%  { transform: scale(.97) translateY(-3px) rotate(2deg); }
+  100% { transform: scale(1) translateY(0) rotate(0deg); }
+}
+
+/* ---------- 你的双拳（第一视角，近处） ---------- */
+.my-fists { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.fist {
+  position: absolute; bottom: -26px; width: 118px; height: 116px;
+  border-radius: 46% 46% 32% 32% / 40% 40% 62% 62%;
+  background:
+    radial-gradient(ellipse 62% 42% at 50% 16%, rgba(255,255,255,.4), transparent 72%),
+    radial-gradient(circle at 34% 32%, #ff9d9d 0%, #e65454 40%, #b02d2d 76%, #82201f 100%);
+  box-shadow:
+    inset -9px -14px 26px rgba(84,8,8,.62),
+    inset 9px 11px 22px rgba(255,190,190,.32),
+    0 -8px 30px rgba(0,0,0,.5);
+  transition: transform .16s cubic-bezier(.34,1.56,.64,1), filter .16s;
+  will-change: transform;
+}
+/* 拇指 */
+.fist::before {
+  content: ""; position: absolute; top: 42%; width: 38px; height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #f27272, #a92a2a);
+  box-shadow: inset -4px -6px 10px rgba(84,8,8,.5);
+}
+/* 手腕护套：让拳头有"从下方伸进来"的实体感，而不是一颗浮空的球 */
+.fist .cuff {
+  position: absolute; left: 13%; right: 13%; bottom: -8px; height: 44px;
+  border-radius: 10px 10px 44% 44%;
+  background: linear-gradient(180deg, #7d1c1c 0%, #5a1414 55%, #430f0f 100%);
+  box-shadow: inset 0 6px 12px rgba(0,0,0,.45), 0 10px 22px rgba(0,0,0,.4);
+}
+.fist.left  { left: 2.5%;  transform: rotate(-9deg); }
+.fist.right { right: 2.5%; transform: rotate(9deg); }
+.fist.left::before  { right: -14px; }
+.fist.right::before { left: -14px; }
+
+/* 轮到你出拳的那只手会亮起来 —— 顺带告诉玩家该用哪只手 */
+.fist.ready { filter: drop-shadow(0 0 14px rgba(255,130,130,.95)) drop-shadow(0 0 4px rgba(255,255,255,.6)); }
+.fist.ready::after {
+  content: ""; position: absolute; inset: -6px; border-radius: inherit;
+  border: 2px solid rgba(255,170,170,.55);
+  animation: readyPulse 1.4s ease-in-out infinite;
+}
+@keyframes readyPulse {
+  0%, 100% { opacity: .25; transform: scale(1); }
+  50%      { opacity: .85; transform: scale(1.04); }
+}
+
+/* 出拳：向前（屏幕外方向）推出去，所以是放大 + 往中间上方走 */
+.fist.thrust.left  { animation: thrustLeft .24s cubic-bezier(.34,1.4,.5,1); }
+.fist.thrust.right { animation: thrustRight .24s cubic-bezier(.34,1.4,.5,1); }
+@keyframes thrustLeft {
+  0%   { transform: rotate(-9deg) scale(1) translate(0, 0); }
+  42%  { transform: rotate(-3deg) scale(1.34) translate(38%, -74%); }
+  100% { transform: rotate(-9deg) scale(1) translate(0, 0); }
+}
+@keyframes thrustRight {
+  0%   { transform: rotate(9deg) scale(1) translate(0, 0); }
+  42%  { transform: rotate(3deg) scale(1.34) translate(-38%, -74%); }
+  100% { transform: rotate(9deg) scale(1) translate(0, 0); }
+}
+
+/* ---------- 特效层 ---------- */
+/* 提示栏里的「左拳 / 右拳」标签 */
+.fist-tag {
+  font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  color: #b03333; background: #fff1f1; border: 1px solid #f3c5c5;
+}
+.fx-pow, .fx-dmg {
+  position: absolute; z-index: 7; pointer-events: none;
   font-size: 30px; line-height: 1;
 }
-.fx-punch { left: 96px; top: 50%; margin-top: -15px; animation: punchGo .42s ease-in forwards; }
-@keyframes punchGo {
-  0% { transform: translateX(0) scale(1); opacity: 1; }
-  100% { transform: translateX(var(--go, 240px)) scale(1.25); opacity: 0; }
-}
-.fx-counter { right: 96px; top: 50%; margin-top: -15px; animation: counterGo .42s ease-in forwards; }
-@keyframes counterGo {
-  0% { transform: translateX(0) scale(1); opacity: 1; }
-  100% { transform: translateX(calc(-1 * var(--go, 240px))) scale(1.25); opacity: 0; }
-}
 .fx-pow {
-  left: 76%; top: 42%; margin: -22px 0 0 -22px; font-size: 42px;
-  animation: powPop .42s ease-out forwards;
+  left: 50%; top: 24%; margin: -22px 0 0 -22px; font-size: 46px;
+  animation: powPop .42s cubic-bezier(.16,1,.3,1) forwards;
 }
-.fx-pow.big { font-size: 58px; margin: -29px 0 0 -29px; }
+.fx-pow.big { font-size: 62px; margin: -30px 0 0 -30px; }
 @keyframes powPop {
-  0% { transform: scale(.3) rotate(-18deg); opacity: 0; }
-  35% { transform: scale(1.15) rotate(6deg); opacity: 1; }
+  0%   { transform: scale(.3) rotate(-18deg); opacity: 0; }
+  35%  { transform: scale(1.15) rotate(6deg); opacity: 1; }
   100% { transform: scale(1.4) rotate(14deg); opacity: 0; }
 }
 .fx-dmg {
-  font-family: var(--mono); font-size: 21px; font-weight: 700;
-  animation: dmgFloat .7s ease-out forwards;
+  font-family: var(--mono); font-size: 22px; font-weight: 700;
+  animation: dmgFloat .7s cubic-bezier(.16,1,.3,1) forwards;
 }
-.fx-dmg.foe { left: 71%; top: 10%; color: #e03131; }
-.fx-dmg.you { left: 19%; top: 10%; color: #ef4444; }
-.fx-dmg.big { font-size: 28px; }
+.fx-dmg.foe { left: 50%; margin-left: -18px; top: 4%; color: #ff6b6b; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+.fx-dmg.you { left: 50%; margin-left: -18px; top: 58%; color: #ff8f8f; }
+.fx-dmg.big { font-size: 29px; }
 @keyframes dmgFloat {
   0% { transform: translateY(6px) scale(.7); opacity: 0; }
   25% { transform: translateY(0) scale(1.1); opacity: 1; }
@@ -746,8 +853,9 @@ button.home-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-l
 .rr-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 @media (max-width: 720px) {
-  .ring-stage { height: 112px; padding: 0 22px; }
-  .fighter .fig { width: 54px; height: 54px; font-size: 28px; }
+  .ring-stage { height: 168px; }
+  .foe-view { width: 120px; height: 138px; margin-left: -60px; }
+  .fist { width: 82px; height: 76px; bottom: -18px; }
   .qkey { width: 44px; height: 50px; font-size: 20px; }
   .qkey.cur { font-size: 24px; }
 }
@@ -762,4 +870,55 @@ button.home-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-l
   .key.special { font-size: 9px; }
   .hands-wrap { gap: 14px; padding: 11px 10px; }
   .finger { min-width: 38px; }
+}
+
+/* ============================================================
+   无障碍：尊重系统的「减少动态效果」
+   ------------------------------------------------------------
+   原则（参考 animate skill）：有动效的界面必须给降级方案。
+   不是简单地把动画全关掉 —— 那样会丢失反馈信息。
+   做法是：去掉大位移和无限循环，保留颜色 / 明暗 / 数字这类
+   不依赖运动的信息。
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  /* 默认把过渡压到极短，但仍保留状态变化的差异 */
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* 所有位移类动画直接取消 */
+  .type-area.shake,
+  .ring-stage.shake,
+  .fist.thrust.left,
+  .fist.thrust.right,
+  .foe-view.hitted,
+  .ring-banner.show,
+  .ring-clock.urgent,
+  .fist.ready::after,
+  .type-text .c.cur::before {
+    animation: none !important;
+  }
+
+  /* 被打中：不震屏，改用静态红色内阴影表达（信息还在） */
+  .ring-stage.hitflash,
+  .ring-stage.hitflash.shake {
+    animation: none !important;
+    box-shadow: inset 0 0 96px 14px rgba(220,38,38,.5) !important;
+  }
+
+  /* 伤害数字仍然要能看见，只是不再从下往上飘 */
+  .fx-dmg { animation: dmgStatic .8s steps(1) forwards !important; }
+  @keyframes dmgStatic {
+    0%, 80% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: none; }
+  }
+
+  /* 命中爆点：保留图标，不做缩放旋转 */
+  .fx-pow { animation: none !important; opacity: 1; }
+
+  /* 待命拳套的光环改成静态描边 */
+  .fist.ready::after { opacity: .8; }
 }

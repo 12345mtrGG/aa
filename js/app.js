@@ -437,8 +437,9 @@ function buildSession(cfg) {
     onFeedback: onFeedback,
   });
 
-  // 「下一组」按钮：限时测试没有下一组
-  $('btnNext').style.display = cfg.mode === 'test' ? 'none' : '';
+  // 「下一组」按钮：限时测试和自定义文本都没有"下一组"
+  const noNext = cfg.mode === 'test' || cfg.mode === 'custom';
+  $('btnNext').style.display = noNext ? 'none' : '';
 
   renderStats(App.session.stats());
   $('typeScroll').scrollTop = 0;
@@ -664,6 +665,95 @@ function startTest() {
     target: unit ? unit.target : TEST_TEXTS[kind](),
     items: unit ? unit.items : undefined,
     durationSec: dur,
+  });
+}
+
+/* ============================================================
+   自定义练习
+   ============================================================ */
+
+/**
+ * 把粘贴进来的文本规整成可以逐字比对的目标串。
+ * - 统一换行符（Windows 的 \r\n / 老的 \r 都转成 \n）
+ * - 可选把 Tab 换成 4 个空格（粘贴来的代码经常混用 Tab 和空格）
+ * - 去掉每行行尾多余的空格，以及首尾的空行
+ */
+function normalizeCustomText(raw, tabsToSpaces) {
+  let t = String(raw == null ? '' : raw).replace(/\r\n?/g, '\n');
+  // 从网页 / Word 复制过来的文本常带 BOM 和零宽字符：肉眼看不见，但会卡住练习
+  t = t.replace(/[\uFEFF\u200B-\u200D]/g, '');
+  if (tabsToSpaces) t = t.replace(/\t/g, '    ');
+  t = t.split('\n').map((line) => line.replace(/[ ]+$/, '')).join('\n');
+  return t.replace(/^\n+/, '').replace(/\n+$/, '');
+}
+
+/**
+ * 找出键盘上打不出来的字符（中文汉字、全角标点、emoji……）。
+ * 这个模式是逐字比对的，混进这类字符会让练习卡死，所以开始前要先拦下来。
+ */
+function unmappableChars(t) {
+  const seen = new Map();
+  for (const ch of t) {
+    if (ch === '\n' || ch === ' ' || ch === '\t') continue;
+    if (!keyInfoForChar(ch)) seen.set(ch, (seen.get(ch) || 0) + 1);
+  }
+  return seen;
+}
+
+function customError(msg) {
+  const el = $('customErr');
+  if (!msg) { el.hidden = true; el.textContent = ''; return; }
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+function updateCustomCount() {
+  const t = normalizeCustomText($('customText').value, $('customTabs').checked);
+  const el = $('customCount');
+  const n = t.length;
+  el.textContent = n + ' 个字符' + (n > 0 ? ` · ${t.split('\n').length} 行` : '');
+  el.classList.toggle('over', n > 3000);
+  el.classList.toggle('warn', n > 1500 && n <= 3000);
+  if (n > 0) customError('');
+}
+
+function startCustom() {
+  const t = normalizeCustomText($('customText').value, $('customTabs').checked);
+
+  if (t.length < 10) {
+    customError('文本太短了，至少要 10 个字符才值得练一次。');
+    $('customText').focus();
+    return;
+  }
+  if (t.length > 8000) {
+    customError(`太长了（${t.length} 个字符）。建议删减到 3000 字以内 —— 一次练不完，也不容易坚持。`);
+    return;
+  }
+
+  // 打不出来的字符会让严格模式永远卡在那里，必须提前拦住
+  const bad = unmappableChars(t);
+  if (bad.size > 0) {
+    let total = 0;
+    bad.forEach((n) => { total += n; });
+    const sample = [...bad.keys()].slice(0, 6).map((c) => `「${c}」`).join('');
+    customError(
+      `文本里有 ${total} 个字符键盘上打不出来：${sample}${bad.size > 6 ? ' 等' : ''}。`
+      + '这个模式是逐字比对英文和代码的 —— 中文汉字、全角标点、emoji 都输入不了。'
+      + '要练中文请用顶栏的「拼音打字」，那里是打拼音。',
+    );
+    return;
+  }
+
+  customError('');
+
+  App.list = null;
+  App.index = -1;
+  startPractice({
+    title: '自定义练习',
+    subtitle: `${t.length} 个字符 · ${t.split('\n').length} 行`,
+    mode: 'custom',
+    origin: 'custom',
+    target: t,
   });
 }
 
@@ -1041,6 +1131,15 @@ function init() {
   bindSeg($('testKind'));
   bindSeg($('testDur'));
   $('btnStartTest').addEventListener('click', startTest);
+
+  // 自定义练习
+  $('customStart').addEventListener('click', startCustom);
+  $('customText').addEventListener('input', updateCustomCount);
+  $('customTabs').addEventListener('change', updateCustomCount);
+  $('customText').addEventListener('keydown', (e) => {
+    // 文本框里 Ctrl+Enter 直接开始，省得去点按钮
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); startCustom(); }
+  });
 
   // 成绩记录
   $('btnClearRecords').addEventListener('click', () => {

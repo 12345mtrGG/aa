@@ -8,20 +8,23 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">跳到主要内容</a>
+
 <header class="topbar">
   <div class="brand"><span class="logo">⌨</span><span>打字练习</span></div>
-  <nav class="nav" id="nav">
+  <nav class="nav" id="nav" aria-label="主导航">
     <button class="nav-btn active" data-screen="home">首页</button>
     <button class="nav-btn" data-screen="finger">指法基础</button>
     <button class="nav-btn" data-screen="code">编程打字</button>
     <button class="nav-btn" data-screen="english">英文练习</button>
     <button class="nav-btn" data-screen="pinyin">拼音打字</button>
+    <button class="nav-btn" data-screen="custom">自定义</button>
     <button class="nav-btn" data-screen="test">速度测试</button>
     <button class="nav-btn" data-screen="records">成绩记录</button>
   </nav>
 </header>
 
-<main id="main">
+<main id="main" tabindex="-1">
 
   <!-- ================= 首页 ================= -->
   <section class="screen active" id="screen-home">
@@ -65,6 +68,12 @@
         <h3>拼音中文打字</h3>
         <p>屏幕给汉字，你打拼音。带候选词框，像真的输入法一样；虚拟键盘照样提示指法。</p>
         <span class="hc-tag">中文输入</span>
+      </button>
+      <button class="home-card" data-goto="custom">
+        <div class="hc-icon">📋</div>
+        <h3>自定义练习</h3>
+        <p>把课堂笔记、要背的课文、你自己的代码贴进来，就练你自己的那一段。</p>
+        <span class="hc-tag">练自己的内容</span>
       </button>
       <button class="home-card" data-goto="test">
         <div class="hc-icon">⏱</div>
@@ -134,9 +143,30 @@
       </div>
 
       <div class="ring-stage" id="boxStage">
-        <div class="fighter you" id="boxYouFig"><span class="fig">🥊</span><em>你</em></div>
-        <div class="ring-mid"></div>
-        <div class="fighter foe" id="boxFoeFig"><span class="fig">🥊</span><em>对手</em></div>
+        <!-- 对手：正面朝向玩家，双手护架 -->
+        <div class="foe-view" id="boxFoeFig">
+          <svg viewBox="0 0 200 230" aria-hidden="true">
+            <path class="foe-torso" d="M24 230 Q26 160 100 148 Q174 160 176 230 Z" />
+            <rect class="foe-neck" x="87" y="108" width="26" height="46" rx="12" />
+            <circle class="foe-head" cx="100" cy="78" r="45" />
+            <path class="foe-hair" d="M56 66 Q60 26 100 26 Q140 26 144 66 Q121 47 100 49 Q79 47 56 66 Z" />
+            <ellipse class="foe-eye" cx="84" cy="80" rx="4.6" ry="6.2" />
+            <ellipse class="foe-eye" cx="116" cy="80" rx="4.6" ry="6.2" />
+            <path class="foe-brow" d="M74 68 L93 73 M126 68 L107 73" />
+            <path class="foe-mouth" d="M88 103 Q100 112 112 103" />
+            <circle class="foe-glove" cx="62" cy="132" r="26" />
+            <circle class="foe-glove" cx="138" cy="132" r="26" />
+            <circle class="foe-glove-hi" cx="55" cy="124" r="9" />
+            <circle class="foe-glove-hi" cx="145" cy="124" r="9" />
+          </svg>
+        </div>
+
+        <!-- 你的双拳：第一视角，从屏幕下方伸入 -->
+        <div class="my-fists" id="boxYouFig">
+          <div class="fist left" id="fistLeft"><i class="cuff"></i></div>
+          <div class="fist right" id="fistRight"><i class="cuff"></i></div>
+        </div>
+
         <div class="ring-banner" id="boxBanner"></div>
       </div>
 
@@ -159,7 +189,7 @@
       <div class="keyboard" id="boxingKeyboard"></div>
 
       <div class="ring-overlay hidden" id="boxOverlay">
-        <div class="ring-result">
+        <div class="ring-result" role="dialog" aria-modal="true" aria-labelledby="boxResTitle">
           <div class="rr-icon" id="boxResIcon">🏆</div>
           <h2 id="boxResTitle">回合结束</h2>
           <div class="rr-stats" id="boxResStats"></div>
@@ -203,6 +233,40 @@
     </div>
     <div class="tabs" id="pinyinTabs"></div>
     <div class="level-grid" id="pinyinLevels"></div>
+  </section>
+
+  <!-- ================= 自定义练习 ================= -->
+  <section class="screen" id="screen-custom">
+    <div class="panel-head">
+      <h2>自定义练习</h2>
+      <p>把你想练的内容贴进来 —— 课堂笔记、要背的段落、你自己的代码都行。换行和缩进会如实保留，练习时该按回车就按回车。</p>
+    </div>
+
+    <div class="custom-box">
+      <label class="custom-label" for="customText">要练习的文本</label>
+      <textarea id="customText" spellcheck="false" rows="9"
+        placeholder="在这里粘贴或输入……&#10;&#10;例如：&#10;for (int i = 0; i &lt; n; ++i) {&#10;    sum += arr[i];&#10;}"></textarea>
+      <div class="custom-bar">
+        <span class="custom-count" id="customCount">0 个字符</span>
+        <label class="switch">
+          <input type="checkbox" id="customTabs" checked>
+          <span>把 Tab 换成 4 个空格</span>
+        </label>
+        <button class="btn primary" id="customStart">开始练习</button>
+      </div>
+      <p class="custom-err" id="customErr" role="alert" hidden></p>
+    </div>
+
+    <div class="card">
+      <h3>几点提醒</h3>
+      <ul class="tips">
+        <li>这个模式是<b>逐字比对英文和代码</b>的。中文汉字、全角标点（，。！“”）和 emoji 键盘上打不出来，会被拦下来 —— 要练中文请用顶栏的「拼音打字」</li>
+        <li>粘贴的代码如果原本用 Tab 缩进，勾上上面那个选项会统一成 4 空格，练习时行首按一次 <b>Tab</b> 就能补全</li>
+        <li>文本开头的空行和结尾的空行会自动去掉，中间的空行会保留</li>
+        <li>建议控制在 <b>3000 字以内</b> —— 太长了一次练不完，可以分成几段</li>
+        <li>练习成绩同样会进「成绩记录」（项目名显示为「自定义练习」）</li>
+      </ul>
+    </div>
   </section>
 
   <!-- ================= 速度测试 ================= -->
@@ -358,7 +422,7 @@
 
   <!-- ================= 结算弹窗 ================= -->
   <div class="modal-mask hidden" id="modalMask">
-    <div class="modal" id="modal">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
       <div class="modal-stars" id="mStars"></div>
       <h2 id="mTitle">这一组完成啦</h2>
       <div class="modal-stats" id="mStats"></div>
